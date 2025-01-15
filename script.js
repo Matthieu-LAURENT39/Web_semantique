@@ -128,6 +128,7 @@ function buildQuery(searchTerm, searchType) {
                 `;
                 break;
         }
+
     }
     
     return encodeURIComponent(query);

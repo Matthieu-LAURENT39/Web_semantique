@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+
+<!--
+  Cette page contient un simple champ de texte pour écrire une requête SPARQL
+  à transmettre à DBPedia. Les résultats sont affichés sous forme de tableau,
+  mais vous pouvez reprendre le même format de résultats pour remplir les
+  différents champs des pages de votre application.
+-->
+
+<html>
+
+<head>
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+  <meta content="utf-8" http-equiv="encoding">
+
+  <style>
+    table, th, td {
+      border: 1px solid black;
+    }
+  </style>
+</head>
+
+<body>
+
+<textarea id="requete" rows="20" cols="80"></textarea>
+
+<button onclick="rechercher()">Rechercher</button>
+
+<table id="resultats">
+
+</table>
+
+<script>
+
+  // Cette fonction est appelée lorsque la partie statique de la page HTML
+  // est complètement chargée. Ici, elle met un placeholder dans le champ
+  // de texte dans lequel l'utilisateur peut écrire une requête SPARQL.
+  (function() {
+    document.getElementById("requete").innerHTML = `SELECT * WHERE {
+...
+}`;
+})();
+
+  // On précise que cette fonction est asynchrone pour ne pas bloquer le navigateur
+  // pendant que la requête SPARQL est traitée par DBPedia.
+  // On utilise une requête HTTP pour interroger le moteur SPARQL de DBPedia.
+  async function rechercher() {
+
+    // On récupère le contenu de la requête à envoyer au moteur SPARQL de DBPedia
+    var contenu_requete = document.getElementById("requete").value;
+
+    // On encode la requête SPARQL, puis on forme l'URL à transmettre à DBPedia
+    // On précise également que l'on veut les résultats de la requête au format JSON
+    var url_base = "http://dbpedia.org/sparql";
+    var url = url_base + "?query=" + encodeURIComponent(contenu_requete) + "&format=json";
+
+    // On envoie la requête au serveur de manière asynchrone (à l'aide du mot clé "await")
+    const reponse = await fetch(url);
+
+    // On parse les résultats de la requête, qui sont placés dans un objet JavaScript
+    const data = await reponse.json();
+
+    // L'objet data contient les résultats de la requête. Il faut étudier la structure de cet objet
+    // pour les insérer dans les différentes pages de votre application.
+    console.log(data);
+    afficherResultats(data);
+  }
+
+  // Affichage des résultats dans un tableau
+  function afficherResultats(data)
+  {
+    // Tableau pour mémoriser l'ordre des variables ; sans doute pas nécessaire
+    // pour vos applications, c'est juste pour la démo sous forme de tableau
+    var index = [];
+
+    var contenuTableau = "<tr>";
+
+    data.head.vars.forEach((v, i) => {
+      contenuTableau += "<th>" + v + "</th>";
+      index.push(v);
+    });
+
+    // Les résultats de la requête sont contenus dans l'objet "bindings".
+    // Il y a un binding par résultat. Pour chaque binding, vous pouvez
+    // accéder à la valeur d'une variable avec la syntaxe binding[variable].value .
+    // Ici, on construit le code HTML du tableau de résultats, et on insère ce code
+    // dans l'élément "resultats" de la page. 
+    data.results.bindings.forEach(r => {
+      contenuTableau += "<tr>";
+
+      index.forEach(v => {
+
+        if (r[v])
+        {
+          if (r[v].type === "uri")
+          {
+            contenuTableau += "<td><a href='" + r[v].value + "' target='_blank'>" + r[v].value + "</a></td>";
+          }
+          else {
+            contenuTableau += "<td>" + r[v].value + "</td>";
+          }
+        }
+        else
+        {
+          contenuTableau += "<td></td>";
+        }
+        
+      });
+
+
+      contenuTableau += "</tr>";
+    });
+
+
+    contenuTableau += "</tr>";
+
+    document.getElementById("resultats").innerHTML = contenuTableau;
+
+  }
+</script>
+
+</body>
+</html>

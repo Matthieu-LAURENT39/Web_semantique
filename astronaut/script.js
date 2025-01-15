@@ -80,7 +80,6 @@ function buildQuery(searchTerm, searchType) {
                     FILTER(LANG(?label) = 'en')
                     FILTER(${createFlexibleFilter('?label')})
                 }
-                GROUP BY ?entity ?label
                 LIMIT 15
 `               ;
                 break;
@@ -184,7 +183,14 @@ function displayResults(results, searchType) {
         
         const label = cleanText(result.label?.value || 'Unknown');
         const type = result.type?.value || searchType;
-        const img = result.img?.value || 'default-astronaut.svg'; // Image par défaut si aucune image disponible
+        // Image par défaut si aucune image disponible
+        let img = null;
+        if (type == "astronaut"){
+            img = result.img?.value || 'default-astronaut.svg'; 
+        } else {
+            img = result.img?.value || 'default-mission.svg';
+        }
+        
         const entityURI = result.entity.value;
 
         html += `
@@ -212,7 +218,6 @@ function displayResults(results, searchType) {
 
 // Fonction pour fetch les détails d'une entité
 function loadDetails(entityURI, type) {
-    console.log(type)
     if (type == "astronaut"){
         loadAstronautDetails(entityURI)
     }
@@ -225,30 +230,35 @@ function loadDetails(entityURI, type) {
 
 // Fonction pour fetch les détails d'un astronaute en particulier 
 async function loadAstronautDetails(astronautURI) {
+    console.log(astronautURI)
     try {
         let query = `
-            SELECT DISTINCT ?label ?abstract ?nationality SAMPLE(?birthplace) AS ?birthplace 
-                            SAMPLE(?thumbnail) AS ?img ?birthDate 
-                            SAMPLE(?status) AS ?status SAMPLE(?type) AS ?type 
-                            (GROUP_CONCAT(?mission; separator=", ") AS ?missions)
-            WHERE {
-                BIND(<${astronautURI}> AS ?astronaut)
-                ?astronaut rdfs:label ?label;
-                           foaf:depiction ?thumbnail;
-                           dbo:abstract ?abstract;
-                           dbo:nationality ?nationalityR.
-                OPTIONAL { ?astronaut dbo:birthPlace ?birthplace. }
-                OPTIONAL { ?astronaut dbo:birthDate ?birthDate. }
-                OPTIONAL { ?astronaut dbp:status ?status. }
-                OPTIONAL { ?astronaut dbp:type ?type. }
-                OPTIONAL { ?astronaut dbo:mission ?mission. }
-                ?nationalityR rdfs:label ?nationality.
-                FILTER(LANG(?label) = 'en')
-                FILTER(LANG(?abstract) = 'en')
-                FILTER(LANG(?nationality) = 'en')
-            }
-            GROUP BY ?label ?abstract ?nationality ?birthDate
-        `;
+            SELECT DISTINCT ?label ?abstract ?birthDate 
+                SAMPLE(?thumbnail) as ?img
+                (GROUP_CONCAT(DISTINCT ?one_status; separator=", ") AS ?status)
+                (GROUP_CONCAT(DISTINCT ?mission; separator=", ") AS ?missions)
+                (GROUP_CONCAT(DISTINCT ?type; separator=", ") AS ?types)
+                (GROUP_CONCAT(DISTINCT ?birthplace; separator=", ") AS ?birthplaces)
+                (COALESCE(?n1, ?n2) as ?nationality)
+                (GROUP_CONCAT(DISTINCT ?nationality; separator=", ") AS ?nationalities)
+                                
+                WHERE {
+                    <${astronautURI}> rdfs:label ?label ;
+                                                                foaf:depiction ?thumbnail ;
+                                                                dbo:abstract ?abstract.
+                    OPTIONAL { <${astronautURI}> dbo:birthPlace ?birthplace. }
+                    OPTIONAL { <${astronautURI}> dbo:birthDate ?birthDate. }
+                    OPTIONAL { <${astronautURI}> dbp:status ?one_status. }
+                    OPTIONAL { <${astronautURI}> dbp:type ?type. }
+                    OPTIONAL { <${astronautURI}> dbo:mission ?mission. }
+                    OPTIONAL { <${astronautURI}> dbo:nationality ?n1. }
+                    OPTIONAL { <${astronautURI}> dbp:nationality ?n2. }
+                    FILTER(LANG(?label) = 'en')
+                    FILTER(LANG(?abstract) = 'en')
+                }
+                GROUP BY ?label ?abstract ?birthDate ?status ?nationalities ?n1 ?n2
+
+            `;
         query = encodeURIComponent(query);
 
         const url = `${DBPEDIA_ENDPOINT}?query=${query}&format=json`;
@@ -283,12 +293,12 @@ function showDetails(result) {
 
     const label = result.label?.value || 'No name';
     const abstract = result.abstract?.value || 'No description available';
-    const nationality = result.nationality?.value || 'Unknown';
+    const nationality = result.nationalities?.value || 'Unknown';
     const img = result.img?.value || 'default-astronaut.svg';
-    const birthPlace = result.birthplace?.value || 'Unknown';
+    const birthPlace = result.birthplaces?.value || 'Unknown';
     const birthDate = result.birthDate?.value || 'Unknown';
     const status = result.status?.value || 'Unknown';
-    const astronautType = result.type?.value || 'Unknown';
+    const astronautType = result.types?.value || 'Unknown';
     const missions = result.missions?.value || 'None';
 
     modalTitle.textContent = label;

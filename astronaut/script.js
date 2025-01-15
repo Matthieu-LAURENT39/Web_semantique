@@ -38,7 +38,7 @@ function levenshteinDistance(a, b) {
     return matrix[b.length][a.length];
 }
 
-// Fonction pour construire la requête SPARQL en fonction du type
+// Fonction pour construire la requête SPARQL en fonction du type de recherche (barre de recherche globale)
 function buildQuery(searchTerm, searchType) {
     const term = searchTerm.toLowerCase();
     
@@ -49,86 +49,47 @@ function buildQuery(searchTerm, searchType) {
     
     if (searchType === 'all') {
         query = `
- SELECT DISTINCT ?entity ?label ?abstract ?nationality ?birthplace SAMPLE(?thumbnail) as ?img ?type WHERE { 
+ SELECT DISTINCT ?entity ?label SAMPLE(?thumbnail) as ?img ?type WHERE { 
                 {
                     ?entity dbp:occupation dbr:Astronaut;
                         rdf:type dbo:Person;
                         rdfs:label ?label;
-                        dbo:birthPlace ?birthplace;
-                        foaf:depiction ?thumbnail;
-                        dbo:nationality ?nationality;
-                        dbo:abstract ?abstract .
+                        foaf:depiction ?thumbnail.
                     BIND("astronaut" AS ?type)
                 }
                 UNION
                 {
                     ?entity rdf:type dbo:SpaceMission;
-                        rdfs:label ?label;
-                        dbo:abstract ?abstract .
+                        rdfs:label ?label.
                     BIND("mission" AS ?type)
                 }
                 FILTER(LANG(?label) = 'en')
-                FILTER(LANG(?abstract) = 'en')
                 FILTER(${createFlexibleFilter('?label')})
-            }
-            ORDER BY ASC(STRLEN(?label))    
+            }   
             LIMIT 30
         `;
     } else {
         switch(searchType) {
             case 'astronaut':
-//                 query = `
-//  SELECT DISTINCT ?astronaut ?label ?abstract ?nationality ?brithplace SAMPLE(?thumbnail) as ?img WHERE {
-//                     ?astronaut dbp:occupation dbr:Astronaut;
-//                     rdf:type dbo:Person;
-//                     rdfs:label ?label;
-//                     dbo:birthPlace ?birthplace;
-//                     foaf:depiction ?thumbnail;
-//                     dbo:nationality ?nationalityR;
-//                     dbo:abstract ?abstract .
-//                     ?nationalityR rdfs:label ?nationality.
-//                     FILTER(LANG(?label) = 'en')
-//                     FILTER(LANG(?abstract) = 'en')
-//                     FILTER(LANG(?nationality) = 'en')
-//                     FILTER(${createFlexibleFilter('?label')})
-//                     }
-//                     LIMIT 15`
-   
-//                 ;
-                query = `SELECT DISTINCT ?astronaut ?label ?abstract ?nationality SAMPLE(?birthplace) AS ?birthplace 
-                SAMPLE(?thumbnail) AS ?img ?birthDate 
-                SAMPLE(?status) AS ?status SAMPLE(?type) AS ?type 
-                (GROUP_CONCAT(?mission; separator=", ") AS ?missions)
-WHERE {
-    ?astronaut dbp:occupation dbr:Astronaut;
-               rdf:type dbo:Person;
-               rdfs:label ?label;
-               foaf:depiction ?thumbnail;
-               dbo:nationality ?nationalityR;
-               dbo:abstract ?abstract.
-    OPTIONAL { ?astronaut dbo:birthPlace ?birthplaceR. }
-    OPTIONAL { ?astronaut dbo:birthDate ?birthDate. }
-    OPTIONAL { ?astronaut dbp:status ?status. }
-    OPTIONAL { ?astronaut dbp:type ?type. }
-    OPTIONAL { ?astronaut dbo:mission ?mission. }
-    OPTIONAL { ?birthplaceR rdfs:label ?birthplace. }
-    ?nationalityR rdfs:label ?nationality.
-    FILTER(LANG(?label) = 'en')
-    FILTER(LANG(?abstract) = 'en')
-    FILTER(LANG(?nationality) = 'en')
-    FILTER(${createFlexibleFilter('?label')})
-}
-GROUP BY ?astronaut ?label ?abstract ?nationality ?birthDate
-LIMIT 15`
+                query=
+                `SELECT DISTINCT ?entity ?label SAMPLE(?thumbnail) AS ?img WHERE {
+                    ?entity dbp:occupation dbr:Astronaut;
+                            rdf:type dbo:Person;
+                            rdfs:label ?label;
+                            foaf:depiction ?thumbnail.
+                    FILTER(LANG(?label) = 'en')
+                    FILTER(${createFlexibleFilter('?label')})
+                }
+                GROUP BY ?entity ?label
+                LIMIT 15
+`               ;
                 break;
             case 'mission':
-                query = `
-    SELECT ?mission ?label ?abstract WHERE {
-                    ?mission rdf:type dbo:SpaceMission;
-                    rdfs:label ?label;
-                    dbo:abstract ?abstract .
+                query = 
+                `SELECT DISTINCT ?entity ?label ?abstract WHERE {
+                    ?entity rdf:type dbo:SpaceMission;
+                    rdfs:label ?label.
                     FILTER(LANG(?label) = 'en')
-                    FILTER(LANG(?abstract) = 'en')
                     FILTER(${createFlexibleFilter('?label')})
                     }
                     LIMIT 15
@@ -201,6 +162,7 @@ async function search() {
         const sortedResults = sortResultsByRelevance(data.results.bindings, searchInput.value.trim());
         displayResults(sortedResults, searchType.value);
     } catch (error) {
+        console.log(error)
         resultsDiv.innerHTML = `<p>Error when searching: ${error.message}</p>`;
     }
 }
@@ -219,15 +181,15 @@ function displayResults(results, searchType) {
 
     let html = '';
     results.forEach((result, index) => {
-        console.log(result)
+        
         const label = cleanText(result.label?.value || 'Unknown');
         const type = result.type?.value || searchType;
-        const nationality = result.nationality?.value || 'Unknown';
         const img = result.img?.value || 'default-astronaut.svg'; // Image par défaut si aucune image disponible
+        const entityURI = result.entity.value;
 
         html += `
         <div class="glass rounded-xl p-2 transform transition-all duration-300 hover:scale-[1.02] cursor-pointer" 
-             onclick="showDetails(${index}, ${JSON.stringify(result).replace(/"/g, '&quot;')}, '${type}')">
+             onclick="loadDetails('${entityURI}', '${type}')">
             <div class="flex items-center gap-4">
                 <img src="${img}" alt="${label}" class="w-24 h-24 object-cover rounded-lg">
 
@@ -235,7 +197,6 @@ function displayResults(results, searchType) {
                     <h2 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
                         ${label}
                     </h2>
-                    <p class="text-gray-400 text-sm">Nationality : ${nationality}</p>
                     ${searchType === 'all' ? `
                         <span class="result-type px-3 py-1 rounded-full text-sm font-medium text-cyan-400">
                             ${getTypeLabel(type)}
@@ -249,8 +210,73 @@ function displayResults(results, searchType) {
     resultsDiv.innerHTML = html;
 }
 
+// Fonction pour fetch les détails d'une entité
+function loadDetails(entityURI, type) {
+    console.log(type)
+    if (type == "astronaut"){
+        loadAstronautDetails(entityURI)
+    }
+    else {
+        console.log("todo")
+    }
+}
+
+// TODO: fonction pour fetch les détails d'une mission en particulier
+
+// Fonction pour fetch les détails d'un astronaute en particulier 
+async function loadAstronautDetails(astronautURI) {
+    try {
+        let query = `
+            SELECT DISTINCT ?label ?abstract ?nationality SAMPLE(?birthplace) AS ?birthplace 
+                            SAMPLE(?thumbnail) AS ?img ?birthDate 
+                            SAMPLE(?status) AS ?status SAMPLE(?type) AS ?type 
+                            (GROUP_CONCAT(?mission; separator=", ") AS ?missions)
+            WHERE {
+                BIND(<${astronautURI}> AS ?astronaut)
+                ?astronaut rdfs:label ?label;
+                           foaf:depiction ?thumbnail;
+                           dbo:abstract ?abstract;
+                           dbo:nationality ?nationalityR.
+                OPTIONAL { ?astronaut dbo:birthPlace ?birthplace. }
+                OPTIONAL { ?astronaut dbo:birthDate ?birthDate. }
+                OPTIONAL { ?astronaut dbp:status ?status. }
+                OPTIONAL { ?astronaut dbp:type ?type. }
+                OPTIONAL { ?astronaut dbo:mission ?mission. }
+                ?nationalityR rdfs:label ?nationality.
+                FILTER(LANG(?label) = 'en')
+                FILTER(LANG(?abstract) = 'en')
+                FILTER(LANG(?nationality) = 'en')
+            }
+            GROUP BY ?label ?abstract ?nationality ?birthDate
+        `;
+        query = encodeURIComponent(query);
+
+        const url = `${DBPEDIA_ENDPOINT}?query=${query}&format=json`;
+        const response = await fetch(url, {
+            headers: {
+                    'Accept': 'application/sparql-results+json'
+                }
+            });
+        
+        if (!response.ok) throw new Error('Network error');
+            
+        const data = await response.json();
+        const result = data.results.bindings[0]; 
+       
+        if (result) {
+            showDetails(result);
+        } else {
+            console.error("No details found for the astronaut.");
+        }
+    } catch (error) {
+        console.error("Error loading astronaut details:", error);
+    }
+}
+
+
 // Fonction pour afficher les détails dans le modal
-function showDetails(index, result, type) {
+function showDetails(result) {
+    
     const modal = document.getElementById('detailModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalContent = document.getElementById('modalContent');
@@ -283,33 +309,6 @@ function showDetails(index, result, type) {
 
     modal.classList.add('active');
 }
-
-
-// function showDetails(index, result, type) {
-//     const modal = document.getElementById('detailModal');
-//     const modalTitle = document.getElementById('modalTitle');
-//     const modalContent = document.getElementById('modalContent');
-
-//     const label = result.label?.value || 'No name';
-//     const abstract = result.abstract?.value || 'No description available';
-//     const nationality = result.nationality?.value || 'Unknown';
-//     const img = result.img?.value
-//     const birthPlace = result.birthplace?.value || 'Unknown';
-
-//     modalTitle.textContent = label;
-//     modalContent.innerHTML = `
-//         <div class="flex gap-4">
-//          <img src="${img}" alt="${label}" class="w-32 h-32 object-cover rounded-lg">
-//             <div>
-//                 <p><strong>Description :</strong> ${abstract}</p>
-//                 <p><strong>Nationality :</strong> ${nationality}</p>
-//                 <p><strong>Birthplace:</strong> ${birthPlace}</p>
-//             </div>
-//         </div>
-//     `;
-
-//     modal.classList.add('active');
-// }
 
 
 // Fonction pour fermer le modal

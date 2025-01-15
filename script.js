@@ -374,7 +374,6 @@ document.getElementById('searchInput').addEventListener('keypress', function(e) 
         search();
     }
 });
-
 // Fonction pour formater les valeurs numériques
 function formatValue(value) {
     if (!value) return 'Non disponible';
@@ -387,3 +386,4 @@ function formatValue(value) {
     
     return value;
 } 
+

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Systèmes Planétaires - Explorateur Astronomique</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .result-type {
+            background: rgba(0, 255, 247, 0.1);
+            border: 1px solid rgba(0, 255, 247, 0.2);
+        }
+        .content-container {
+            height: calc(100vh - 2rem);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 255, 247, 0.2) transparent;
+        }
+        .content-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .content-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .content-container::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 255, 247, 0.2);
+            border-radius: 3px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 50;
+            padding: 1rem;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.3s ease-out;
+            max-height: calc(100vh - 4rem);
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal.active .modal-content {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .range-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(0, 255, 247, 0.2);
+            outline: none;
+        }
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgb(6, 182, 212);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .range-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <nav class="glass fixed top-0 left-0 right-0 z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="index.html" class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                        Explorateur Astronomique
+                    </a>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="index.html" class="text-white hover:text-cyan-400 px-3 py-2 rounded-md transition-colors">Accueil</a>
+                    <a href="solar-system.html" class="text-white hover:text-cyan-400 px-3 py-2 rounded-md transition-colors">Systèmes Planétaires</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="relative min-h-screen flex items-start justify-center p-4 pt-20">
+        <div class="content-container w-full max-w-4xl">
+            <header class="text-center mb-8 pt-8">
+                <h1 class="text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                    Systèmes Planétaires
+                </h1>
+                <p class="text-gray-300 mb-4">
+                    Explorez les différents systèmes planétaires de notre univers, des systèmes proches aux plus lointains
+                </p>
+            </header>
+            
+            <div class="glass rounded-2xl p-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Recherche par nom -->
+                    <div class="col-span-full">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="Rechercher un système planétaire par nom..." 
+                            class="w-full bg-black/30 border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 transition-colors text-white placeholder-gray-400"
+                        >
+                    </div>
+
+                    <!-- Filtres -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Nombre de planètes</label>
+                            <div class="flex gap-4">
+                                <input 
+                                    type="number" 
+                                    id="minPlanets" 
+                                    placeholder="Min" 
+                                    class="w-24 bg-black/30 border border-gray-700 rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-400 transition-colors text-white"
+                                    min="0"
+                                >
+                                <input 
+                                    type="number" 
+                                    id="maxPlanets" 
+                                    placeholder="Max" 
+                                    class="w-24 bg-black/30 border border-gray-700 rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-400 transition-colors text-white"
+                                    min="0"
+                                >
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Distance de la Terre (années-lumière)</label>
+                            <input 
+                                type="range" 
+                                id="distanceRange" 
+                                min="0" 
+                                max="10000" 
+                                value="5000"
+                                class="range-slider mb-2"
+                            >
+                            <div class="flex justify-between text-sm text-gray-400">
+                                <span>0</span>
+                                <span id="distanceValue">5000</span>
+                                <span>10000+</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Type d'étoile centrale</label>
+                            <select 
+                                id="starType" 
+                                class="w-full bg-black/30 border border-gray-700 rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-400 transition-colors text-white"
+                            >
+                                <option value="all">Tous les types</option>
+                                <option value="main-sequence">Séquence principale</option>
+                                <option value="red-dwarf">Naine rouge</option>
+                                <option value="white-dwarf">Naine blanche</option>
+                                <option value="giant">Géante</option>
+                                <option value="supergiant">Supergéante</option>
+                                <option value="binary">Système binaire</option>
+                                <option value="multiple">Système multiple</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Présence de planètes habitables</label>
+                            <select 
+                                id="habitablePlanets" 
+                                class="w-full bg-black/30 border border-gray-700 rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-400 transition-colors text-white"
+                            >
+                                <option value="all">Tous</option>
+                                <option value="yes">Oui</option>
+                                <option value="no">Non</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Galaxie hôte</label>
+                            <input 
+                                type="text" 
+                                id="hostGalaxy" 
+                                placeholder="Nom de la galaxie..." 
+                                class="w-full bg-black/30 border border-gray-700 rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-400 transition-colors text-white"
+                            >
+                        </div>
+
+                        <button 
+                            onclick="searchSolarSystems()" 
+                            class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-3 rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105 mt-6"
+                        >
+                            Rechercher
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results" class="space-y-6">
+                <!-- Les résultats seront affichés ici -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content glass max-w-2xl w-full rounded-2xl overflow-hidden">
+            <div class="modal-header">
+                <div class="flex justify-between items-center">
+                    <h2 id="modalTitle" class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"></h2>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div id="modalContent" class="p-6">
+                <!-- Le contenu détaillé sera injecté ici -->
+            </div>
+        </div>
+    </div>
+    <script src="solar-system-script.js"></script>
+</body>
+</html> 

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorateur Astronomique - Galaxies</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="galaxy.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Galaxies</h1>
+        </header>
+        
+        <div class="items-per-page">
+            <label for="itemsPerPage">Galaxies per page:</label>
+            <select id="itemsPerPage" onchange="updateItemsPerPage(this.value)">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+        </div>
+
+        <div id="results" class="results-section"></div>
+        <div class="pagination">
+            <button onclick="previousPage()" id="prevBtn" disabled>Previous</button>
+            <button onclick="nextPage()" id="nextBtn">Next</button>
+        </div>
+
+    </div>
+    <script src="script3630.js"></script>
+</body>
+</html> 

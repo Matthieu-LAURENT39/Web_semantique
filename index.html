@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorateur Astronomique</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Explorateur Astronomique</h1>
+        </header>
+        
+        <div class="search-section">
+            <input type="text" id="searchInput" placeholder="Rechercher une planète, galaxie...">
+            <select id="searchType">
+                <option value="planet">Planète</option>
+                <option value="galaxy">Galaxie</option>
+                <option value="universe">Univers</option>
+            </select>
+            <button onclick="search()">Rechercher</button>
+        </div>
+
+        <div id="results" class="results-section">
+            <!-- Les résultats seront affichés ici -->
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 

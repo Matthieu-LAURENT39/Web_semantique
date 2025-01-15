@@ -3,144 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Astronaute</title>
+    <title>Astronaut & Mission</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Space Grotesk', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: white;
-        }
-        .glass {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .result-type {
-            background: rgba(0, 255, 247, 0.1);
-            border: 1px solid rgba(0, 255, 247, 0.2);
-        }
-        .content-container {
-            height: calc(100vh - 2rem);
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(0, 255, 247, 0.2) transparent;
-        }
-        .content-container::-webkit-scrollbar {
-            width: 6px;
-        }
-        .content-container::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .content-container::-webkit-scrollbar-thumb {
-            background-color: rgba(0, 255, 247, 0.2);
-            border-radius: 3px;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 50;
-            padding: 1rem;
-            align-items: center;
-            justify-content: center;
-            overflow-y: auto;
-        }
-        .modal.active {
-            display: flex;
-        }
-        .modal-content {
-            opacity: 0;
-            transform: scale(0.95);
-            transition: all 0.3s ease-out;
-            max-height: calc(100vh - 4rem);
-            margin: auto;
-            display: flex;
-            flex-direction: column;
-        }
-        .modal.active .modal-content {
-            opacity: 1;
-            transform: scale(1);
-        }
-        .modal-scroll {
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(0, 255, 247, 0.2) transparent;
-            padding-right: 6px;
-        }
-        .modal-scroll::-webkit-scrollbar {
-            width: 6px;
-        }
-        .modal-scroll::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .modal-scroll::-webkit-scrollbar-thumb {
-            background-color: rgba(0, 255, 247, 0.2);
-            border-radius: 3px;
-        }
-        .info-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 1rem;
-            padding: 1rem;
-            transition: all 0.3s ease;
-        }
-        .info-card:hover {
-            background: rgba(255, 255, 255, 0.08);
-        }
-        .modal-header {
-            position: sticky;
-            top: 0;
-            background: rgba(15, 23, 42, 0.9);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            z-index: 10;
-            padding: 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="min-h-screen">
     <div class="relative min-h-screen flex items-start justify-center p-4">
-        <div class="content-container w-full max-w-3xl">
+        <div class="content-container w-full">
             <header class="text-center mb-8 pt-8">
                 <h1 class="text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                    Rechercher des Astronautes
+                    Astronaut & Mission Search
                 </h1>
             </header>
             
-            <div class="glass rounded-2xl p-6 mb-8">
+            <div class="glass rounded-2xl p-6 mb-8 mx-40">
                 <div class="flex flex-col md:flex-row gap-4">
                     <input 
                         type="text" 
                         id="searchInput" 
-                        placeholder="Rechercher un astronaute, une mission..." 
+                        placeholder="Search for a astronaut, a mission..." 
                         class="flex-1 bg-black/30 border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 transition-colors text-white placeholder-gray-400"
                     >
                     <select 
                         id="searchType" 
                         class="bg-black/30 border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 transition-colors text-white"
                     >
-                        <option value="all">Tout</option>
-                        <option value="astronaut">Astronaute</option>
+                        <option value="all">All</option>
+                        <option value="astronaut">Astronaut</option>
                         <option value="mission">Mission</option>
                     </select>
                     <button 
                         onclick="search()" 
                         class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-3 rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105"
                     >
-                        Rechercher
+                        Search
                     </button>
                 </div>
             </div>
 
-            <div id="results" class="space-y-6">
+            <div id="results" class="mx-20 grid grid-cols-2 gap-4">
                 <!-- Les résultats seront affichés ici -->
             </div>
         </div>

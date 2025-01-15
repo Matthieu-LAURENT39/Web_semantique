@@ -49,11 +49,14 @@ function buildQuery(searchTerm, searchType) {
     
     if (searchType === 'all') {
         query = `
- SELECT DISTINCT ?entity ?label ?abstract ?type WHERE { 
+ SELECT DISTINCT ?entity ?label ?abstract ?nationality ?birthplace SAMPLE(?thumbnail) as ?img ?type WHERE { 
                 {
                     ?entity dbp:occupation dbr:Astronaut;
                         rdf:type dbo:Person;
                         rdfs:label ?label;
+                        dbo:birthPlace ?birthplace;
+                        foaf:depiction ?thumbnail;
+                        dbo:nationality ?nationality;
                         dbo:abstract ?abstract .
                     BIND("astronaut" AS ?type)
                 }
@@ -64,8 +67,8 @@ function buildQuery(searchTerm, searchType) {
                         dbo:abstract ?abstract .
                     BIND("mission" AS ?type)
                 }
-                FILTER(LANG(?label) = 'fr')
-                FILTER(LANG(?abstract) = 'fr')
+                FILTER(LANG(?label) = 'en')
+                FILTER(LANG(?abstract) = 'en')
                 FILTER(${createFlexibleFilter('?label')})
             }
             ORDER BY ASC(STRLEN(?label))    
@@ -74,19 +77,49 @@ function buildQuery(searchTerm, searchType) {
     } else {
         switch(searchType) {
             case 'astronaut':
-                query = `
- SELECT ?astronaut ?label ?abstract WHERE {
-                    ?astronaut dbp:occupation dbr:Astronaut;
-                    rdf:type dbo:Person;
-                    rdfs:label ?label;
-                    dbo:abstract ?abstract .
-                    FILTER(LANG(?label) = 'fr')
-                    FILTER(LANG(?abstract) = 'fr')
-                    FILTER(${createFlexibleFilter('?label')})
-                    }
-                    LIMIT 15`
+//                 query = `
+//  SELECT DISTINCT ?astronaut ?label ?abstract ?nationality ?brithplace SAMPLE(?thumbnail) as ?img WHERE {
+//                     ?astronaut dbp:occupation dbr:Astronaut;
+//                     rdf:type dbo:Person;
+//                     rdfs:label ?label;
+//                     dbo:birthPlace ?birthplace;
+//                     foaf:depiction ?thumbnail;
+//                     dbo:nationality ?nationalityR;
+//                     dbo:abstract ?abstract .
+//                     ?nationalityR rdfs:label ?nationality.
+//                     FILTER(LANG(?label) = 'en')
+//                     FILTER(LANG(?abstract) = 'en')
+//                     FILTER(LANG(?nationality) = 'en')
+//                     FILTER(${createFlexibleFilter('?label')})
+//                     }
+//                     LIMIT 15`
    
-                ;
+//                 ;
+                query = `SELECT DISTINCT ?astronaut ?label ?abstract ?nationality SAMPLE(?birthplace) AS ?birthplace 
+                SAMPLE(?thumbnail) AS ?img ?birthDate 
+                SAMPLE(?status) AS ?status SAMPLE(?type) AS ?type 
+                (GROUP_CONCAT(?mission; separator=", ") AS ?missions)
+WHERE {
+    ?astronaut dbp:occupation dbr:Astronaut;
+               rdf:type dbo:Person;
+               rdfs:label ?label;
+               foaf:depiction ?thumbnail;
+               dbo:nationality ?nationalityR;
+               dbo:abstract ?abstract.
+    OPTIONAL { ?astronaut dbo:birthPlace ?birthplaceR. }
+    OPTIONAL { ?astronaut dbo:birthDate ?birthDate. }
+    OPTIONAL { ?astronaut dbp:status ?status. }
+    OPTIONAL { ?astronaut dbp:type ?type. }
+    OPTIONAL { ?astronaut dbo:mission ?mission. }
+    OPTIONAL { ?birthplaceR rdfs:label ?birthplace. }
+    ?nationalityR rdfs:label ?nationality.
+    FILTER(LANG(?label) = 'en')
+    FILTER(LANG(?abstract) = 'en')
+    FILTER(LANG(?nationality) = 'en')
+    FILTER(${createFlexibleFilter('?label')})
+}
+GROUP BY ?astronaut ?label ?abstract ?nationality ?birthDate
+LIMIT 15`
                 break;
             case 'mission':
                 query = `
@@ -94,8 +127,8 @@ function buildQuery(searchTerm, searchType) {
                     ?mission rdf:type dbo:SpaceMission;
                     rdfs:label ?label;
                     dbo:abstract ?abstract .
-                    FILTER(LANG(?label) = 'fr')
-                    FILTER(LANG(?abstract) = 'fr')
+                    FILTER(LANG(?label) = 'en')
+                    FILTER(LANG(?abstract) = 'en')
                     FILTER(${createFlexibleFilter('?label')})
                     }
                     LIMIT 15
@@ -146,11 +179,11 @@ async function search() {
     const resultsDiv = document.getElementById('results');
     
     if (!searchInput.value.trim()) {
-        resultsDiv.innerHTML = '<p>Veuillez entrer un terme de recherche</p>';
+        resultsDiv.innerHTML = '<p>Please enter search term</p>';
         return;
     }
     
-    resultsDiv.innerHTML = '<p>Recherche en cours...</p>';
+    resultsDiv.innerHTML = '<p>Searching...</p>';
     
     const query = buildQuery(searchInput.value.trim(), searchType.value);
     const url = `${DBPEDIA_ENDPOINT}?query=${query}&format=json`;
@@ -162,56 +195,57 @@ async function search() {
             }
         });
         
-        if (!response.ok) throw new Error('Erreur réseau');
+        if (!response.ok) throw new Error('Network error');
         
         const data = await response.json();
         const sortedResults = sortResultsByRelevance(data.results.bindings, searchInput.value.trim());
         displayResults(sortedResults, searchType.value);
     } catch (error) {
-        resultsDiv.innerHTML = `<p>Erreur lors de la recherche: ${error.message}</p>`;
+        resultsDiv.innerHTML = `<p>Error when searching: ${error.message}</p>`;
     }
 }
 
 // Fonction pour afficher les résultats
 function displayResults(results, searchType) {
     const resultsDiv = document.getElementById('results');
-    
+
     if (!results || results.length === 0) {
         resultsDiv.innerHTML = `
             <div class="glass rounded-xl p-6 text-center">
-                <p class="text-gray-400">Aucun résultat trouvé</p>
+                <p class="text-gray-400">No result found</p>
             </div>`;
         return;
     }
-    
+
     let html = '';
     results.forEach((result, index) => {
-        const label = cleanText(result.label?.value || 'Sans nom');
-        const abstract = result.abstract?.value || 'Pas de description disponible';
+        console.log(result)
+        const label = cleanText(result.label?.value || 'Unknown');
         const type = result.type?.value || searchType;
-        
+        const nationality = result.nationality?.value || 'Unknown';
+        const img = result.img?.value || 'default-astronaut.svg'; // Image par défaut si aucune image disponible
+
         html += `
-            <div class="glass rounded-xl p-6 transform transition-all duration-300 hover:scale-[1.02] cursor-pointer" 
-                 onclick="showDetails(${index}, ${JSON.stringify(result).replace(/"/g, '&quot;')}, '${type}')">
-                <div class="flex flex-col gap-3">
-                    <div class="flex items-start justify-between">
-                        <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                            ${label}
-                        </h2>
-                        ${searchType === 'all' ? `
-                            <span class="result-type px-3 py-1 rounded-full text-sm font-medium text-cyan-400">
-                                ${getTypeLabel(type)}
-                            </span>
-                        ` : ''}
-                    </div>
-                    
-                    <p class="text-gray-300 leading-relaxed line-clamp-3">
-                        ${abstract}
-                    </p>
+        <div class="glass rounded-xl p-2 transform transition-all duration-300 hover:scale-[1.02] cursor-pointer" 
+             onclick="showDetails(${index}, ${JSON.stringify(result).replace(/"/g, '&quot;')}, '${type}')">
+            <div class="flex items-center gap-4">
+                <img src="${img}" alt="${label}" class="w-24 h-24 object-cover rounded-lg">
+
+                <div>
+                    <h2 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                        ${label}
+                    </h2>
+                    <p class="text-gray-400 text-sm">Nationality : ${nationality}</p>
+                    ${searchType === 'all' ? `
+                        <span class="result-type px-3 py-1 rounded-full text-sm font-medium text-cyan-400">
+                            ${getTypeLabel(type)}
+                        </span>
+                    ` : ''}
                 </div>
-            </div>`;
+            </div>
+        </div>`;
     });
-    
+
     resultsDiv.innerHTML = html;
 }
 
@@ -220,98 +254,68 @@ function showDetails(index, result, type) {
     const modal = document.getElementById('detailModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalContent = document.getElementById('modalContent');
-    
-    const label = cleanText(result.label?.value || 'Sans nom');
-    const abstract = result.abstract?.value || 'Pas de description disponible';
-    
+
+    const label = result.label?.value || 'No name';
+    const abstract = result.abstract?.value || 'No description available';
+    const nationality = result.nationality?.value || 'Unknown';
+    const img = result.img?.value || 'default-astronaut.svg';
+    const birthPlace = result.birthplace?.value || 'Unknown';
+    const birthDate = result.birthDate?.value || 'Unknown';
+    const status = result.status?.value || 'Unknown';
+    const astronautType = result.type?.value || 'Unknown';
+    const missions = result.missions?.value || 'None';
+
     modalTitle.textContent = label;
-    
-    let content = `
-        <div class="space-y-6">
-            <div class="info-card">
-                <p class="text-gray-300 leading-relaxed text-lg">
-                    ${abstract}
-                </p>
-            </div>
-    `;
-
-    // Section pour les informations techniques
-    let hasDetails = false;
-    let detailsContent = '';
-
-    if ((type === 'planet' || type === 'planet') && result.mass) {
-        hasDetails = true;
-        detailsContent += `
-            <div class="info-card">
-                <h3 class="text-cyan-400 font-medium text-lg mb-2">Masse</h3>
-                <p class="text-gray-300">${formatValue(result.mass.value)}</p>
-            </div>`;
-    }
-    if ((type === 'planet' || type === 'planet') && result.radius) {
-        hasDetails = true;
-        detailsContent += `
-            <div class="info-card">
-                <h3 class="text-cyan-400 font-medium text-lg mb-2">Rayon moyen</h3>
-                <p class="text-gray-300">${formatValue(result.radius.value)}</p>
-            </div>`;
-    }
-    if ((type === 'constellation' || type === 'constellation')) {
-        if (result.area) {
-            hasDetails = true;
-            detailsContent += `
-                <div class="info-card">
-                    <h3 class="text-cyan-400 font-medium text-lg mb-2">Surface</h3>
-                    <p class="text-gray-300">${result.area.value} degrés carrés</p>
-                </div>`;
-        }
-        if (result.stars) {
-            hasDetails = true;
-            detailsContent += `
-                <div class="info-card">
-                    <h3 class="text-cyan-400 font-medium text-lg mb-2">Étoiles principales</h3>
-                    <p class="text-gray-300">${result.stars.value}</p>
-                </div>`;
-        }
-    }
-
-    if (hasDetails) {
-        content += `
+    modalContent.innerHTML = `
+        <div class="flex gap-4">
+            <img src="${img}" alt="${label}" class="w-32 h-32 object-cover rounded-lg">
             <div>
-                <h3 class="text-xl font-semibold mb-4 text-cyan-400">Caractéristiques</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    ${detailsContent}
-                </div>
-            </div>
-        `;
-    }
-    
-    content += `
-            <div class="info-card mt-6">
-                <p class="text-sm text-gray-400">
-                    Source: DBpedia
-                    <br>
-                    Type: ${getTypeLabel(type)}
-                </p>
+                <p><strong>Description :</strong> ${abstract}</p>
+                <p><strong>Nationality :</strong> ${nationality}</p>
+                <p><strong>Birthplace :</strong> ${birthPlace}</p>
+                <p><strong>Birthdate :</strong> ${birthDate}</p>
+                <p><strong>Status :</strong> ${status}</p>
+                <p><strong>Type :</strong> ${astronautType}</p>
+                <p><strong>Missions :</strong> ${missions}</p>
             </div>
         </div>
     `;
-    
-    modalContent.innerHTML = content;
-    modal.classList.add('active');
 
-    setTimeout(() => {
-        modal.querySelector('.modal-content').style.opacity = '1';
-        modal.querySelector('.modal-content').style.transform = 'scale(1)';
-    }, 10);
+    modal.classList.add('active');
 }
+
+
+// function showDetails(index, result, type) {
+//     const modal = document.getElementById('detailModal');
+//     const modalTitle = document.getElementById('modalTitle');
+//     const modalContent = document.getElementById('modalContent');
+
+//     const label = result.label?.value || 'No name';
+//     const abstract = result.abstract?.value || 'No description available';
+//     const nationality = result.nationality?.value || 'Unknown';
+//     const img = result.img?.value
+//     const birthPlace = result.birthplace?.value || 'Unknown';
+
+//     modalTitle.textContent = label;
+//     modalContent.innerHTML = `
+//         <div class="flex gap-4">
+//          <img src="${img}" alt="${label}" class="w-32 h-32 object-cover rounded-lg">
+//             <div>
+//                 <p><strong>Description :</strong> ${abstract}</p>
+//                 <p><strong>Nationality :</strong> ${nationality}</p>
+//                 <p><strong>Birthplace:</strong> ${birthPlace}</p>
+//             </div>
+//         </div>
+//     `;
+
+//     modal.classList.add('active');
+// }
+
 
 // Fonction pour fermer le modal
 function closeModal() {
     const modal = document.getElementById('detailModal');
     const modalContent = modal.querySelector('.modal-content');
-    
-    modalContent.style.opacity = '0';
-    modalContent.style.transform = 'scale(0.95)';
     
     setTimeout(() => {
         modal.classList.remove('active');
@@ -332,12 +336,11 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Fonction pour obtenir le label du type en français
+// Fonction pour obtenir le label du type
 function getTypeLabel(type) {
     const types = {
-        'planet': 'Planète',
-        'galaxy': 'Galaxie',
-        'constellation': 'Constellation'
+        'astronaut': 'Astronaut',
+        'mission': 'Mission',
     };
     return types[type] || type;
 }
@@ -351,7 +354,7 @@ document.getElementById('searchInput').addEventListener('keypress', function(e) 
 
 // Fonction pour formater les valeurs numériques
 function formatValue(value) {
-    if (!value) return 'Non disponible';
+    if (!value) return 'Not available';
     
     // Si c'est un nombre scientifique
     if (value.includes('E')) {

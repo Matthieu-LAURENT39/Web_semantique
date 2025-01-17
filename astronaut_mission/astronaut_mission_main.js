@@ -60,7 +60,8 @@ function buildQuery(searchTerm, searchType) {
                 UNION
                 {
                     ?entity rdf:type dbo:SpaceMission;
-                        rdfs:label ?label.
+                        rdfs:label ?label;
+                        foaf:depiction ?thumbnail.
                     BIND("mission" AS ?type)
                 }
                 FILTER(LANG(?label) = 'en')
@@ -85,9 +86,10 @@ function buildQuery(searchTerm, searchType) {
                 break;
             case 'mission':
                 query = 
-                `SELECT DISTINCT ?entity ?label ?abstract WHERE {
+                `SELECT DISTINCT ?entity ?label SAMPLE(?thumbnail) AS ?img WHERE {
                     ?entity rdf:type dbo:SpaceMission;
-                    rdfs:label ?label.
+                            rdfs:label ?label;
+                            foaf:depiction ?thumbnail.
                     FILTER(LANG(?label) = 'en')
                     FILTER(${createFlexibleFilter('?label')})
                     }
@@ -224,7 +226,7 @@ function loadDetails(entityURI, type) {
         window.location.href = url;
     }
     else {
-        console.log("todo")
+        window.location.href = url;
     }
 }
 

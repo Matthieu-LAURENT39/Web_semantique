@@ -10,7 +10,6 @@ function getQueryParam(param) {
 // Fonction pour fetch les détails d'un astronaute en particulier 
 async function loadAstronautDetails() {
     astronautURI = getQueryParam("uri")
-    console.log(astronautURI)
     try {
         let query = `
             SELECT DISTINCT ?label ?abstract ?birthDate 
@@ -66,8 +65,6 @@ async function loadAstronautDetails() {
 // Fonction pour afficher les détails dans le modal
 function showDetailsAstronaut(result) {
     
-    const content_detail_astronaut = document.getElementById('content-detail-astronaut');
-
     const label = result.label?.value || 'No name';
     const abstract = result.abstract?.value || 'No description available';
     const nationality = result.nationalities?.value || 'Unknown';

@@ -86,7 +86,25 @@ function showDetailsAstronaut(result) {
     document.getElementById("astronaut-birthdate").textContent = birthDate;
     document.getElementById("astronaut-status").textContent = status;
     document.getElementById("astronaut-type").textContent = astronautType;
-    document.getElementById("astronaut-missions").textContent = missions;
+    // document.getElementById("astronaut-missions").textContent = missions;
+
+    const missionsListElement = document.getElementById("astronaut-missions");
+    missionsListElement.innerHTML = ""; // Réinitialiser la liste des missions
+    if (missions !== 'Unknown') {
+        const missionList = missions.split(",");
+        missionList.forEach((missionUri) => {
+            const missionName = missionUri.split("/").pop().replace(/_/g, " ");
+            const listItem = document.createElement("li");
+            const link = document.createElement("a");
+            link.href = `/astronaut_mission/mission_detail.html?uri=${encodeURIComponent(missionUri)}`;
+            link.textContent = missionName;
+            link.classList.add("text-cyan-400", "hover:underline");
+            listItem.appendChild(link);
+            missionsListElement.appendChild(listItem);
+        });
+    } else {
+        document.getElementById("missions-section").style.display = 'none'; // Masquer la section si aucune mission
+    }
 
 }
 

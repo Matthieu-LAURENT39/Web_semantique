@@ -55,54 +55,7 @@ async function loadMissionDetails() {
     }
 }
 
-// // Fonction pour afficher les détails dans le modal
-// function showDetailsMission(result) {
-    
-//     const label = result.label?.value || 'No name';
-//     const abstract = result.abstract?.value || 'No description available';
-//     const crewMember = result.crewMember?.value || 'Unknown';
-//     const img = result.img?.value || 'default-mission.svg';
-//     const landingDate = result.landingDate?.value || 'Unknown';
-//     const launchDate = result.launchDate?.value || 'Unknown';
-//     const launchVehicle = result.launchVehicle?.value || 'Unknown';
-//     const nextMission = result.nextMission?.value || 'Unknown';
-//     const previousMission = result.previousMission?.value || 'Unknown';
-//     const operator = result.operator?.value || 'Unknown';
-//     const missionType = result.missionType?.value || 'Unknown';
-
-//     const crewMemberList = crewMember.split(",")
-//     console.log(crewMemberList)
-    
-//     const crewListElement = document.getElementById("crew-list");
-//     crewListElement.innerHTML = ""; 
-//     crewMemberList.forEach((astronautUri) => {
-//         const astronautName = astronautUri.split("/").pop().replace(/_/g, " ");
-//         const listItem = document.createElement("li");
-//         const link = document.createElement("a");
-//         link.href = `/astronaut_mission/astronaut_detail.html?uri=${encodeURIComponent(astronautUri)}`;
-//         link.textContent = astronautName;
-//         link.classList.add("text-cyan-400", "hover:underline");
-//         listItem.appendChild(link);
-//         crewListElement.appendChild(listItem);
-//     });
-
-//     document.getElementById("mission-img").src = img;
-//     document.getElementById("mission-img").alt = label;
-//     document.getElementById("mission-label").textContent = label;
-
-//     // Mise à jour des détails
-//     document.getElementById("mission-description").textContent = abstract;
-//     document.getElementById("mission-crew").textContent = crewMember;
-//     document.getElementById("mission-landingDate").textContent = landingDate;
-//     document.getElementById("mission-launchVehicle").textContent = launchVehicle;
-//     document.getElementById("mission-nextMission").textContent = nextMission;
-//     document.getElementById("mission-previousMission").textContent = previousMission;
-//     document.getElementById("mission-operator").textContent = operator;
-//     document.getElementById("mission-type").textContent = missionType;
-//     document.getElementById("mission-launchDate").textContent = launchDate;
-
-// }
-
+// Fonction pour afficher les détails dans le modal
 function showDetailsMission(result) {
     const label = result.label?.value || 'No name';
     const abstract = result.abstract?.value || 'No description available';

@@ -210,35 +210,18 @@ function displayResults(results, searchType) {
         return;
     }
     
-    let html = '';
-    results.forEach((result, index) => {
-        const label = cleanText(result.label?.value || 'Sans nom');
-        const abstract = result.abstract?.value || 'Pas de description disponible';
-        const type = result.type?.value || searchType;
+    resultsDiv.innerHTML = '';
+    results.forEach(result => {
+        const constellation = {
+            name: result.label?.value || 'Sans nom',
+            abstract: result.abstract?.value || 'Pas de description disponible',
+            image: result.image?.value || null,
+            stars: result.stars?.value || null,
+            area: result.area?.value || null
+        };
         
-        html += `
-            <div class="glass rounded-xl p-6 transform transition-all duration-300 hover:scale-[1.02] cursor-pointer" 
-                 onclick="showDetails(${index}, ${JSON.stringify(result).replace(/"/g, '&quot;')}, '${type}')">
-                <div class="flex flex-col gap-3">
-                    <div class="flex items-start justify-between">
-                        <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                            ${label}
-                        </h2>
-                        ${searchType === 'all' ? `
-                            <span class="result-type px-3 py-1 rounded-full text-sm font-medium text-cyan-400">
-                                ${getTypeLabel(type)}
-                            </span>
-                        ` : ''}
-                    </div>
-                    
-                    <p class="text-gray-300 leading-relaxed line-clamp-3">
-                        ${abstract}
-                    </p>
-                </div>
-            </div>`;
+        resultsDiv.appendChild(createConstellationCard(constellation));
     });
-    
-    resultsDiv.innerHTML = html;
 }
 
 // Fonction pour afficher les détails dans le modal
@@ -386,4 +369,42 @@ function formatValue(value) {
     }
     
     return value;
+}
+
+// Fonction pour créer une carte de constellation
+function createConstellationCard(constellation) {
+    const card = document.createElement('div');
+    card.className = 'glass rounded-xl overflow-hidden transform transition-all duration-300 hover:scale-[1.02] cursor-pointer mb-6';
+    card.onclick = () => window.location.href = `constellation.html?name=${encodeURIComponent(constellation.name)}`;
+
+    // Créer le contenu de la carte
+    const imageStyle = constellation.image ? 
+        `background-image: url('${constellation.image}'); height: 200px;` : 
+        'height: 0;';
+
+    card.innerHTML = `
+        <div class="bg-cover bg-center" style="${imageStyle}"></div>
+        <div class="p-6">
+            <h2 class="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                ${constellation.name}
+            </h2>
+            <div class="flex flex-wrap gap-2 mb-4">
+                ${constellation.stars ? `
+                    <div class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm">
+                        ${constellation.stars} étoiles
+                    </div>
+                ` : ''}
+                ${constellation.area ? `
+                    <div class="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-sm">
+                        ${parseFloat(constellation.area).toFixed(2)} deg²
+                    </div>
+                ` : ''}
+            </div>
+            <p class="text-gray-300 line-clamp-3">
+                ${constellation.abstract}
+            </p>
+        </div>
+    `;
+
+    return card;
 } 

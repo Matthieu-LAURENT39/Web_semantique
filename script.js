@@ -49,7 +49,7 @@ function buildQuery(searchTerm, searchType) {
     
     if (searchType === 'all') {
         query = `
-            SELECT DISTINCT ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars WHERE {
+            SELECT DISTINCT ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars (SAMPLE(?img) as ?thumbnail) WHERE {
                 {
                     ?entity a dbo:Planet ;
                            rdfs:label ?label ;
@@ -57,6 +57,13 @@ function buildQuery(searchTerm, searchType) {
                     BIND("planet" AS ?type)
                     OPTIONAL { ?entity dbo:mass ?mass }
                     OPTIONAL { ?entity dbo:meanRadius ?radius }
+                    OPTIONAL { 
+                        {
+                            ?entity foaf:depiction ?img
+                        } UNION {
+                            ?entity dbp:image ?img
+                        }
+                    }
                 }
                 UNION
                 {
@@ -64,6 +71,7 @@ function buildQuery(searchTerm, searchType) {
                            rdfs:label ?label ;
                            dbo:abstract ?abstract .
                     BIND("galaxy" AS ?type)
+                    OPTIONAL { ?entity dbo:thumbnail ?img }
                 }
                 UNION
                 {
@@ -73,11 +81,13 @@ function buildQuery(searchTerm, searchType) {
                     BIND("constellation" AS ?type)
                     OPTIONAL { ?entity dbo:area ?area }
                     OPTIONAL { ?entity dbp:stars ?stars }
+                    OPTIONAL { ?entity dbo:thumbnail ?img }
                 }
                 FILTER(LANG(?label) = 'fr')
                 FILTER(LANG(?abstract) = 'fr')
                 FILTER(${createFlexibleFilter('?label')})
             }
+            GROUP BY ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars
             ORDER BY ASC(STRLEN(?label))
             LIMIT 30
         `;
@@ -85,25 +95,34 @@ function buildQuery(searchTerm, searchType) {
         switch(searchType) {
             case 'planet':
                 query = `
-                    SELECT DISTINCT ?entity ?label ?abstract ?mass ?radius WHERE {
+                    SELECT DISTINCT ?entity ?label ?abstract ?mass ?radius (SAMPLE(?img) as ?thumbnail) WHERE {
                         ?entity a dbo:Planet ;
                                rdfs:label ?label ;
                                dbo:abstract ?abstract .
                         OPTIONAL { ?entity dbo:mass ?mass }
                         OPTIONAL { ?entity dbo:meanRadius ?radius }
+                        OPTIONAL { 
+                            {
+                                ?entity foaf:depiction ?img
+                            } UNION {
+                                ?entity dbp:image ?img
+                            }
+                        }
                         FILTER(LANG(?label) = 'fr')
                         FILTER(LANG(?abstract) = 'fr')
                         FILTER(${createFlexibleFilter('?label')})
                     }
+                    GROUP BY ?entity ?label ?abstract ?mass ?radius
                     LIMIT 15
                 `;
                 break;
             case 'galaxy':
                 query = `
-                    SELECT DISTINCT ?entity ?label ?abstract WHERE {
+                    SELECT DISTINCT ?entity ?label ?abstract ?thumbnail WHERE {
                         ?entity a dbo:Galaxy ;
                                rdfs:label ?label ;
                                dbo:abstract ?abstract .
+                        OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
                         FILTER(LANG(?label) = 'fr')
                         FILTER(LANG(?abstract) = 'fr')
                         FILTER(${createFlexibleFilter('?label')})
@@ -113,12 +132,13 @@ function buildQuery(searchTerm, searchType) {
                 break;
             case 'constellation':
                 query = `
-                    SELECT DISTINCT ?entity ?label ?abstract ?area ?stars WHERE {
+                    SELECT DISTINCT ?entity ?label ?abstract ?area ?stars ?thumbnail WHERE {
                         ?entity a dbo:Constellation ;
                                rdfs:label ?label ;
                                dbo:abstract ?abstract .
                         OPTIONAL { ?entity dbo:area ?area }
                         OPTIONAL { ?entity dbp:stars ?stars }
+                        OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
                         FILTER(LANG(?label) = 'fr')
                         FILTER(LANG(?abstract) = 'fr')
                         FILTER(${createFlexibleFilter('?label')})
@@ -210,35 +230,18 @@ function displayResults(results, searchType) {
         return;
     }
     
-    let html = '';
-    results.forEach((result, index) => {
-        const label = cleanText(result.label?.value || 'Sans nom');
-        const abstract = result.abstract?.value || 'Pas de description disponible';
-        const type = result.type?.value || searchType;
+    resultsDiv.innerHTML = '';
+    results.forEach(result => {
+        const constellation = {
+            name: result.label?.value || 'Sans nom',
+            abstract: result.abstract?.value || 'Pas de description disponible',
+            image: result.image?.value || null,
+            stars: result.stars?.value || null,
+            area: result.area?.value || null
+        };
         
-        html += `
-            <div class="glass rounded-xl p-6 transform transition-all duration-300 hover:scale-[1.02] cursor-pointer" 
-                 onclick="showDetails(${index}, ${JSON.stringify(result).replace(/"/g, '&quot;')}, '${type}')">
-                <div class="flex flex-col gap-3">
-                    <div class="flex items-start justify-between">
-                        <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                            ${label}
-                        </h2>
-                        ${searchType === 'all' ? `
-                            <span class="result-type px-3 py-1 rounded-full text-sm font-medium text-cyan-400">
-                                ${getTypeLabel(type)}
-                            </span>
-                        ` : ''}
-                    </div>
-                    
-                    <p class="text-gray-300 leading-relaxed line-clamp-3">
-                        ${abstract}
-                    </p>
-                </div>
-            </div>`;
+        resultsDiv.appendChild(createConstellationCard(constellation));
     });
-    
-    resultsDiv.innerHTML = html;
 }
 
 // Fonction pour afficher les détails dans le modal
@@ -253,6 +256,12 @@ function showDetails(index, result, type) {
     modalTitle.textContent = label;
     
     let content = `
+        <div id="modalImage" class="w-full flex justify-center mb-6">
+            ${result.thumbnail?.value ? 
+                `<img src="${result.thumbnail.value}" alt="${label}" 
+                     class="rounded-lg max-h-[300px] object-cover shadow-lg" />` 
+                : ''}
+        </div>
         <div class="space-y-6">
             <div class="info-card">
                 <p class="text-gray-300 leading-relaxed text-lg">
@@ -386,4 +395,42 @@ function formatValue(value) {
     }
     
     return value;
+}
+
+// Fonction pour créer une carte de constellation
+function createConstellationCard(constellation) {
+    const card = document.createElement('div');
+    card.className = 'glass rounded-xl overflow-hidden transform transition-all duration-300 hover:scale-[1.02] cursor-pointer mb-6';
+    card.onclick = () => window.location.href = `constellation.html?name=${encodeURIComponent(constellation.name)}`;
+
+    // Créer le contenu de la carte
+    const imageStyle = constellation.image ? 
+        `background-image: url('${constellation.image}'); height: 200px;` : 
+        'height: 0;';
+
+    card.innerHTML = `
+        <div class="bg-cover bg-center" style="${imageStyle}"></div>
+        <div class="p-6">
+            <h2 class="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                ${constellation.name}
+            </h2>
+            <div class="flex flex-wrap gap-2 mb-4">
+                ${constellation.stars ? `
+                    <div class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm">
+                        ${constellation.stars} étoiles
+                    </div>
+                ` : ''}
+                ${constellation.area ? `
+                    <div class="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-sm">
+                        ${parseFloat(constellation.area).toFixed(2)} deg²
+                    </div>
+                ` : ''}
+            </div>
+            <p class="text-gray-300 line-clamp-3">
+                ${constellation.abstract}
+            </p>
+        </div>
+    `;
+
+    return card;
 } 

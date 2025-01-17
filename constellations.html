@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Constellations - Astronomical Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 50%;
+            background: linear-gradient(90deg, #22d3ee, #3b82f6);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        .nav-link:hover::after {
+            width: 80%;
+        }
+        .nav-link.active::after {
+            width: 80%;
+        }
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .active {
+            color: white;
+        }
+        .constellation-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .constellation-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+        .loading {
+            display: none;
+        }
+        .loading.active {
+            display: flex;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 50;
+            overflow-y: auto;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.3s ease-out;
+        }
+        .modal.active .modal-content {
+            opacity: 1;
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Navigation Bar -->
+    <nav class="glass fixed top-0 w-full z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="index.html" class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                        Astronomical Explorer
+                    </a>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="index.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Home
+                    </a>
+                    <a href="constellations.html" class="nav-link active px-4 py-2 rounded-lg text-white">
+                        Constellations
+                    </a>
+                    <a href="blackholes.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Black Holes
+                    </a>
+                    <a href="planet.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Planets
+                    </a>
+                    <a href="galaxy.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Galaxies
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="relative min-h-screen flex items-start justify-center p-4 pt-20">
+        <div class="w-full max-w-3xl">
+            <header class="text-center mb-8 pt-8">
+                <h1 class="text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                    Constellations
+                </h1>
+                <p class="text-gray-300">
+                    Discover the constellations that illuminate our night sky
+                </p>
+                <button 
+                    onclick="toggleDefinition()" 
+                    class="mt-4 text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-2 mx-auto"
+                >
+                    <span id="knowMoreText">Know More</span>
+                    <svg id="knowMoreIcon" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div id="constellationDefinition" class="hidden mt-6 glass rounded-xl p-6 text-left max-w-2xl mx-auto">
+                    <p class="text-gray-300">
+                        A constellation is a group of stars that forms a perceived pattern or picture in the night sky. Modern astronomy recognizes 88 official constellations, which were formalized by the International Astronomical Union (IAU) in 1922. These patterns helped ancient travelers navigate, farmers determine when to plant crops, and served as the basis for many cultural myths and stories throughout history. Today, constellations continue to be essential tools for astronomers to map the night sky and locate celestial objects.
+                    </p>
+                </div>
+            </header>
+            
+            <!-- Search Interface -->
+            <div class="glass rounded-2xl p-6 mb-8">
+                <div class="flex flex-col gap-4">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <input 
+                            type="text" 
+                            id="constellationSearch" 
+                            placeholder="Search for a constellation..." 
+                            class="flex-1 bg-black/30 border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 transition-colors text-white placeholder-gray-400"
+                        >
+                        <button 
+                            onclick="searchConstellations()" 
+                            class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-3 rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105"
+                        >
+                            Search
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" class="loading justify-center items-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+            </div>
+
+            <!-- Results Container -->
+            <div id="constellationResults" class="space-y-6">
+                <!-- Results will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Constellation Modal -->
+    <div id="constellationModal" class="modal items-center justify-center p-4">
+        <div class="modal-content glass max-w-4xl w-full rounded-2xl overflow-hidden my-8">
+            <div class="relative">
+                <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg z-10">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+                <div id="modalImage" class="w-full h-64 bg-cover bg-center"></div>
+                <div class="p-6">
+                    <h2 id="modalTitle" class="text-3xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"></h2>
+                    <div id="modalDetails" class="flex flex-wrap gap-2 mb-4"></div>
+                    <div id="modalContent" class="prose prose-invert max-w-none">
+                        <div id="modalDescription" class="text-gray-300 mb-6"></div>
+                        <div id="modalAdditionalInfo" class="space-y-4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="constellation-script.js"></script>
+</body>
+</html> 

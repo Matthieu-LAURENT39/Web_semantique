@@ -49,7 +49,7 @@ function buildQuery(searchTerm, searchType) {
     
     if (searchType === 'all') {
         query = `
-            SELECT DISTINCT ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars (SAMPLE(?img) as ?thumbnail) WHERE {
+            SELECT DISTINCT ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars ?temperature ?luminosity WHERE {
                 {
                     ?entity a dbo:Planet ;
                            rdfs:label ?label ;
@@ -82,6 +82,15 @@ function buildQuery(searchTerm, searchType) {
                     OPTIONAL { ?entity dbo:area ?area }
                     OPTIONAL { ?entity dbp:stars ?stars }
                     OPTIONAL { ?entity dbo:thumbnail ?img }
+                }
+                UNION
+                {
+                    ?entity a dbo:Star ;
+                           rdfs:label ?label ;
+                           dbo:abstract ?abstract .
+                    BIND("star" AS ?type)
+                    OPTIONAL { ?entity dbo:temperature ?temperature }
+                    OPTIONAL { ?entity dbo:luminosity ?luminosity }
                 }
                 FILTER(LANG(?label) = 'fr')
                 FILTER(LANG(?abstract) = 'fr')
@@ -147,8 +156,23 @@ function buildQuery(searchTerm, searchType) {
                     LIMIT 15
                 `;
                 break;
+            case 'star':
+                query = `
+                    SELECT DISTINCT ?entity ?label ?abstract ?temperature ?luminosity WHERE {
+                        ?entity a dbo:Star ;
+                               rdfs:label ?label ;
+                               dbo:abstract ?abstract .
+                        OPTIONAL { ?entity dbo:temperature ?temperature }
+                        OPTIONAL { ?entity dbo:luminosity ?luminosity }
+                        FILTER(LANG(?label) = 'fr')
+                        FILTER(LANG(?abstract) = 'fr')
+                        FILTER(${createFlexibleFilter('?label')})
+                    }
+                    ORDER BY ASC(STRLEN(?label))
+                    LIMIT 15
+                `;
+                break;
         }
-
     }
     
     return encodeURIComponent(query);
@@ -255,89 +279,43 @@ function showDetails(index, result, type) {
     
     modalTitle.textContent = label;
     
-    let content = `
-        <div id="modalImage" class="w-full flex justify-center mb-6">
-            ${result.thumbnail?.value ? 
-                `<img src="${result.thumbnail.value}" alt="${label}" 
-                     class="rounded-lg max-h-[300px] object-cover shadow-lg" />` 
-                : ''}
-        </div>
-        <div class="space-y-6">
+    let additionalInfo = '';
+    switch(type) {
+        case 'planet':
+            if (result.mass?.value) additionalInfo += `<p><strong>Masse:</strong> ${formatValue(result.mass.value)}</p>`;
+            if (result.radius?.value) additionalInfo += `<p><strong>Rayon moyen:</strong> ${formatValue(result.radius.value)}</p>`;
+            break;
+        case 'constellation':
+            if (result.area?.value) additionalInfo += `<p><strong>Surface:</strong> ${formatValue(result.area.value)}</p>`;
+            if (result.stars?.value) additionalInfo += `<p><strong>Nombre d'étoiles:</strong> ${result.stars.value}</p>`;
+            break;
+        case 'star':
+            if (result.temperature?.value) additionalInfo += `<p><strong>Température:</strong> ${formatValue(result.temperature.value)} K</p>`;
+            if (result.luminosity?.value) additionalInfo += `<p><strong>Luminosité:</strong> ${formatValue(result.luminosity.value)} L☉</p>`;
+            break;
+    }
+    
+    modalContent.innerHTML = `
+        <div class="space-y-4">
             <div class="info-card">
-                <p class="text-gray-300 leading-relaxed text-lg">
-                    ${abstract}
-                </p>
+                <p class="text-lg leading-relaxed">${abstract}</p>
             </div>
-    `;
-
-    // Section pour les informations techniques
-    let hasDetails = false;
-    let detailsContent = '';
-
-    if ((type === 'planet' || type === 'planet') && result.mass) {
-        hasDetails = true;
-        detailsContent += `
-            <div class="info-card">
-                <h3 class="text-cyan-400 font-medium text-lg mb-2">Masse</h3>
-                <p class="text-gray-300">${formatValue(result.mass.value)}</p>
-            </div>`;
-    }
-    if ((type === 'planet' || type === 'planet') && result.radius) {
-        hasDetails = true;
-        detailsContent += `
-            <div class="info-card">
-                <h3 class="text-cyan-400 font-medium text-lg mb-2">Rayon moyen</h3>
-                <p class="text-gray-300">${formatValue(result.radius.value)}</p>
-            </div>`;
-    }
-    if ((type === 'constellation' || type === 'constellation')) {
-        if (result.area) {
-            hasDetails = true;
-            detailsContent += `
+            ${additionalInfo ? `
                 <div class="info-card">
-                    <h3 class="text-cyan-400 font-medium text-lg mb-2">Surface</h3>
-                    <p class="text-gray-300">${result.area.value} degrés carrés</p>
-                </div>`;
-        }
-        if (result.stars) {
-            hasDetails = true;
-            detailsContent += `
-                <div class="info-card">
-                    <h3 class="text-cyan-400 font-medium text-lg mb-2">Étoiles principales</h3>
-                    <p class="text-gray-300">${result.stars.value}</p>
-                </div>`;
-        }
-    }
-
-    if (hasDetails) {
-        content += `
-            <div>
-                <h3 class="text-xl font-semibold mb-4 text-cyan-400">Caractéristiques</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    ${detailsContent}
+                    <h3 class="text-xl font-semibold mb-3 text-cyan-400">Caractéristiques</h3>
+                    ${additionalInfo}
                 </div>
-            </div>
-        `;
-    }
-    
-    content += `
-            <div class="info-card mt-6">
-                <p class="text-sm text-gray-400">
-                    Source: DBpedia
-                    <br>
-                    Type: ${getTypeLabel(type)}
-                </p>
+            ` : ''}
+            <div class="info-card">
+                <h3 class="text-xl font-semibold mb-3 text-cyan-400">Source</h3>
+                <a href="${result.entity.value}" target="_blank" class="text-blue-400 hover:text-blue-300 transition-colors">
+                    Voir sur DBpedia
+                </a>
             </div>
         </div>
     `;
     
-    modalContent.innerHTML = content;
     modal.classList.add('active');
-
-    setTimeout(() => {
-        modal.querySelector('.modal-content').style.opacity = '1';
-        modal.querySelector('.modal-content').style.transform = 'scale(1)';
-    }, 10);
 }
 
 // Fonction pour fermer le modal
@@ -369,12 +347,18 @@ document.addEventListener('keydown', function(e) {
 
 // Fonction pour obtenir le label du type en français
 function getTypeLabel(type) {
-    const types = {
-        'planet': 'Planète',
-        'galaxy': 'Galaxie',
-        'constellation': 'Constellation'
-    };
-    return types[type] || type;
+    switch(type) {
+        case 'planet':
+            return 'Planète';
+        case 'galaxy':
+            return 'Galaxie';
+        case 'constellation':
+            return 'Constellation';
+        case 'star':
+            return 'Étoile';
+        default:
+            return type;
+    }
 }
 
 // Permettre la recherche avec la touche Entrée

@@ -17,8 +17,8 @@ function loadGalaxies() {
         ?x a dbo:Galaxy.
         ?x a dbo:CelestialBody.
         ?x rdfs:label ?name.
-        ?x foaf:depiction ?imgUrl.
-        FILTER(lang(?name) = 'en')
+        ?x dbo:thumbnail ?imgUrl.
+        FILTER(lang(?name) = 'en') 
     }
     LIMIT ${itemsPerPage}
     OFFSET ${offset}
@@ -87,6 +87,36 @@ function nextPage() {
 
 // Initial load
 loadGalaxies();
+
+async function executeWikidataRequest(query, callback) {
+    try {
+        // Construct the SPARQL query URL for Wikidata
+        const wikidataEndpoint = "https://query.wikidata.org/sparql";
+        const url = wikidataEndpoint + "?query=" + encodeURIComponent(query) + "&format=json";
+
+        // Send the request to the Wikidata server asynchronously
+        const response = await fetch(url, {
+            headers: { "User-Agent": "YourAppName/1.0 (YourEmail@example.com)" } // Set a user agent (optional but recommended)
+        });
+
+        // Check if the response is OK (status 200-299)
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        // Parse the response JSON
+        const data = await response.json();
+
+        // Invoke the callback with the results
+        callback(true, data);
+    } catch (error) {
+        console.error("An error occurred:", error.message);
+
+        // Invoke the callback with an error indicator
+        callback(false, error.message);
+    }
+}
+
 
 async function executeRequest(request, callback) {
     try {

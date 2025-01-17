@@ -412,43 +412,113 @@ function generateAtmosphereLegend(results) {
         }).join('');
 }
 
+function getRadiusForDisplay(radiusData) {
+    // Get equatorial and polar radius, fallback to mean radius if either is missing
+    let equatorial = radiusData.equatorial?.value;
+    let polar = radiusData.polar?.value;
+
+    if (!equatorial || !polar) {
+        if (radiusData.mean?.value) {
+            equatorial = radiusData.mean.value;
+            polar = radiusData.mean.value;
+        } else {
+            return null;
+        }
+    }
+
+    return { equatorial, polar, unit: radiusData.equatorial?.unit || radiusData.polar?.unit || radiusData.mean?.unit || 'km' };
+}
+
+function createSizeComparison(planetRadius, earthRadius) {
+    if (!planetRadius || !earthRadius) return '';
+
+    // Use the larger planet's equatorial radius to set the scale
+    const maxRadius = Math.max(planetRadius.equatorial, earthRadius.equatorial);
+    const scale = 150 / maxRadius; // Scale to fit in 150px
+
+    // Calculate scaled dimensions
+    const planetWidth = planetRadius.equatorial * scale;
+    const planetHeight = planetRadius.polar * scale;
+    const earthWidth = earthRadius.equatorial * scale;
+    const earthHeight = earthRadius.polar * scale;
+
+    // Calculate ratio between planets
+    const sizeRatio = (planetRadius.equatorial / earthRadius.equatorial).toFixed(2);
+
+    return `
+        <div class="mt-8 text-center">
+            <div class="relative inline-block" style="width: 400px; height: 350px;">
+                <svg width="400" height="400" class="absolute top-0 left-0">
+                    <!-- Planet ellipse -->
+                    <ellipse cx="200" cy="200" rx="${planetWidth}" ry="${planetHeight}"
+                            class="fill-cyan-500/20 stroke-cyan-500" stroke-width="2"/>
+                    <!-- Earth ellipse -->
+                    <ellipse cx="200" cy="200" rx="${earthWidth}" ry="${earthHeight}"
+                            class="fill-blue-500/20 stroke-blue-500" stroke-width="2" stroke-dasharray="4"/>
+                    <!-- Labels -->
+                    <text x="200" y="${200 - planetHeight - 20}" text-anchor="middle" class="fill-cyan-500">Selected Planet</text>
+                    <text x="200" y="${200 - earthHeight - 20}" text-anchor="middle" class="fill-blue-500">Earth</text>
+                </svg>
+            </div>
+            <p class="text-gray-300 mt-4">
+                Size comparison (solid: selected planet, dashed: Earth)
+            </p>
+            <p class="text-gray-300 mt-2 text-xl font-bold">
+                Selected planet is ${sizeRatio}× the size of Earth at the equator
+            </p>
+        </div>
+    `;
+}
+
 function displayRadiusData(results, targetPrefix) {
     const radiusData = processRadiusData(results);
 
-    // Update the appropriate column
-    const container = document.getElementById(`${targetPrefix}-radius-info`);
-    if (!container) return;
+    // Update the planet name in the header if this is the planet data
+    if (targetPrefix === 'planet') {
+        window.planetRadiusData = getRadiusForDisplay(radiusData);
+    } else {
+        window.earthRadiusData = getRadiusForDisplay(radiusData);
+    }
 
-    const content = Object.entries(radiusData).length > 0 ? `
+    // Only display the data for the selected planet
+    if (targetPrefix === 'planet') {
+        // Update the appropriate column
+        const container = document.getElementById(`${targetPrefix}-radius-info`);
+        if (!container) {
+            console.error("Radius data container not found:", targetPrefix);
+            return
+        }
+
+        // Update the content
+        const content = Object.entries(radiusData).length > 0 ? `
         <div class="glass rounded-xl p-4">
-            <h3 class="font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                ${targetPrefix === 'planet' ?
-            document.getElementById("planet-table-header").textContent :
-            'Earth'}
-            </h3>
-            <div class="space-y-4">
-                ${Object.entries(radiusData).map(([type, data]) => `
-                    <div>
-                        <div class="text-gray-300">${data.label}</div>
-                        <div class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                            ${data.value.toLocaleString()} ${data.unit}
-                        </div>
-                    </div>
-                `).join('')}
+            <div class="grid grid-cols-1 md:grid-cols-${Object.entries(radiusData).length} gap-4">
+            ${Object.entries(radiusData).map(([type, data]) => `
+                <div>
+                <div class="text-gray-300">${data.label}</div>
+                <div class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                    ${data.value.toLocaleString()} ${data.unit}
+                </div>
+                </div>
+            `).join('')}
             </div>
         </div>
-    ` : `
+        ` : `
         <div class="glass rounded-xl p-4">
-            <h3 class="font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                ${targetPrefix === 'planet' ?
-        document.getElementById("planet-table-header").textContent :
-        'Earth'}
-            </h3>
             <p class="text-gray-500 italic">No radius data available</p>
         </div>
-    `;
+        `;
 
-    container.innerHTML = content;
+        container.innerHTML = content;
+    }
+
+    // After both planet and Earth data are loaded, create the size comparison
+    if (window.planetRadiusData && window.earthRadiusData) {
+        const comparisonContainer = document.getElementById('radius-comparison');
+        if (comparisonContainer) {
+            comparisonContainer.innerHTML = createSizeComparison(window.planetRadiusData, window.earthRadiusData);
+        }
+    }
 }
 
 // Display functions for comparison table

@@ -248,25 +248,29 @@
             <h2 class="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
                 Radius Information
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
                 <div id="planet-radius-info">
                     <div class="glass rounded-xl p-4">
-                        <h3
-                            class="font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                            <!-- Planet name will be inserted here -->
-                        </h3>
-                        <p class="text-gray-500 italic">Loading radius data...</p>
+                        <div class="radius-content">
+                            <p class="text-gray-500 italic">Loading radius data...</p>
+                        </div>
                     </div>
                 </div>
-                <div id="earth-radius-info">
+                <!-- <div id="earth-radius-info">
                     <div class="glass rounded-xl p-4">
                         <h3
                             class="font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
                             Earth
                         </h3>
-                        <p class="text-gray-500 italic">Loading radius data...</p>
+                        <div class="radius-content">
+                            <p class="text-gray-500 italic">Loading radius data...</p>
+                        </div>
                     </div>
-                </div>
+                </div> -->
+            </div>
+            <!-- Visual size comparison -->
+            <div id="radius-comparison" class="mt-6">
+                <p class="text-gray-500 italic text-center">Loading size comparison...</p>
             </div>
         </div>
     </div>

@@ -225,15 +225,15 @@ function displayLanguageLabels(labels) {
     if (!nameDiv) return;
 
     const languageSection = `
-        <div class="flex flex-wrap justify-center gap-6 text-lg mt-4">
+        <div class="flex flex-wrap justify-center gap-4 text-lg mt-6">
             ${Object.entries(labelMap).map(([lang, name]) => `
-                <div class="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-lg shadow-sm">
-                    <span class="text-2xl" role="img" aria-label="${LANGUAGE_INFO[lang].name} flag">
+                <div class="glass rounded-xl px-6 py-3 flex items-center gap-4">
+                    <span class="text-3xl" role="img" aria-label="${LANGUAGE_INFO[lang].name} flag">
                         ${LANGUAGE_INFO[lang].emoji}
                     </span>
-                    <div class="flex flex-col">
-                        <span class="text-gray-500 text-sm font-medium">${LANGUAGE_INFO[lang].name}</span>
-                        <span class="font-medium">${name}</span>
+                    <div>
+                        <div class="font-medium text-xl text-gray-200">${name}</div>
+                        <div class="text-sm text-gray-400">${LANGUAGE_INFO[lang].name}</div>
                     </div>
                 </div>
             `).join('')}

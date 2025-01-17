@@ -11,6 +11,13 @@ const LANGUAGE_INFO = {
 const DBPEDIA_ENDPOINT = 'https://dbpedia.org/sparql';
 const WIKIDATA_ENDPOINT = 'https://query.wikidata.org/sparql';
 
+const LOG_PREFIX = {
+    DBPEDIA: '[DBPedia]',
+    WIKIDATA: '[Wikidata]',
+    WIKIPEDIA: '[Wikipedia]',
+    ERROR: '[ERROR]'
+};
+
 // Utility functions
 function kelvinToCelsius(k) {
     return k !== null ? (k - 273.15).toFixed(2) : null;
@@ -25,6 +32,9 @@ function tempToPercent(temp) {
 
 // Query builders
 function buildDBPediaQuery(encodedPlanetName) {
+    // Properly encode special characters for SPARQL
+    const sparqlSafeName = encodedPlanetName.replace(/[()]/g, '\\$&');
+
     return `
         PREFIX dbo: <http://dbpedia.org/ontology/>
         PREFIX dbr: <http://dbpedia.org/resource/>
@@ -34,24 +44,24 @@ function buildDBPediaQuery(encodedPlanetName) {
                (GROUP_CONCAT(DISTINCT ?satellite; SEPARATOR="|") as ?satellites)
                (GROUP_CONCAT(DISTINCT ?parentBody; SEPARATOR="|") as ?parentBodies)
         WHERE {
-            dbr:${encodedPlanetName} dbo:abstract ?abstract ;
+            dbr:${sparqlSafeName} dbo:abstract ?abstract ;
                                     owl:sameAs ?wikidataId .
             FILTER(CONTAINS(STR(?wikidataId), "wikidata.org"))
-            OPTIONAL { dbr:${encodedPlanetName} dbo:maximumTemperature ?maxTemp }
-            OPTIONAL { dbr:${encodedPlanetName} dbo:meanTemperature ?meanTemp }
-            OPTIONAL { dbr:${encodedPlanetName} dbo:minimumTemperature ?minTemp }
-            OPTIONAL { dbr:${encodedPlanetName} dbo:averageSpeed ?averageSpeed }
-            OPTIONAL { dbr:${encodedPlanetName} dbo:density ?density }
-            OPTIONAL { dbr:${encodedPlanetName} dbo:surfaceArea ?surfaceArea }
-            OPTIONAL { dbr:${encodedPlanetName} dbo:volume ?volume }
+            OPTIONAL { dbr:${sparqlSafeName} dbo:maximumTemperature ?maxTemp }
+            OPTIONAL { dbr:${sparqlSafeName} dbo:meanTemperature ?meanTemp }
+            OPTIONAL { dbr:${sparqlSafeName} dbo:minimumTemperature ?minTemp }
+            OPTIONAL { dbr:${sparqlSafeName} dbo:averageSpeed ?averageSpeed }
+            OPTIONAL { dbr:${sparqlSafeName} dbo:density ?density }
+            OPTIONAL { dbr:${sparqlSafeName} dbo:surfaceArea ?surfaceArea }
+            OPTIONAL { dbr:${sparqlSafeName} dbo:volume ?volume }
             OPTIONAL { 
                 {
-                    ?satellite dbp:satelliteOf dbr:${encodedPlanetName} 
+                    ?satellite dbp:satelliteOf dbr:${sparqlSafeName} 
                 } UNION {
-                    dbr:${encodedPlanetName} ^dbp:satelliteOf ?satellite
+                    dbr:${sparqlSafeName} ^dbp:satelliteOf ?satellite
                 }
             }
-            OPTIONAL { dbr:${encodedPlanetName} dbp:satelliteOf ?parentBody }
+            OPTIONAL { dbr:${sparqlSafeName} dbp:satelliteOf ?parentBody }
             FILTER (lang(?abstract) = "en")
         } 
         GROUP BY ?abstract ?maxTemp ?meanTemp ?minTemp ?averageSpeed ?density ?surfaceArea ?volume ?wikidataId
@@ -97,32 +107,63 @@ function buildAtmosphereQuery(wikidataId) {
 
 // Data fetching functions
 async function fetchSPARQLData(endpoint, query, headers = {}) {
+    const prefix = endpoint.includes('dbpedia') ? LOG_PREFIX.DBPEDIA : LOG_PREFIX.WIKIDATA;
     const url = `${endpoint}?query=${encodeURIComponent(query)}&format=json`;
-    const response = await fetch(url, { headers });
-    return response.json();
+
+    try {
+        console.log(`${prefix} Requesting: ${url.substring(0, 150)}...`);
+        const response = await fetch(url, { headers });
+
+        if (!response.ok) {
+            console.error(`${prefix} HTTP Error:`, response.status, response.statusText);
+        }
+
+        const text = await response.text();
+        if (!text.trim().startsWith('{')) {
+            console.error(`${prefix} Invalid JSON response:`, text);
+        }
+
+        return JSON.parse(text);
+    } catch (error) {
+        console.error(`${prefix} ${error.name}:`, error.message);
+        throw error;
+    }
 }
 
 async function fetchWikipediaImage(planetName) {
+    const prefix = LOG_PREFIX.WIKIPEDIA;
     try {
         const wikiApiUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${planetName}&prop=pageimages&format=json&pithumbsize=500&origin=*`;
-        const wikiResponse = await fetch(wikiApiUrl);
-        const wikiData = await wikiResponse.json();
-        const pages = wikiData.query.pages;
+        console.log(`${prefix} Fetching image for: ${planetName}`);
+
+        const response = await fetch(wikiApiUrl);
+        if (!response.ok) {
+            console.error(`${prefix} Failed to fetch image:`, response.status, response.statusText);
+            return null;
+        }
+
+        const data = await response.json();
+        const pages = data.query.pages;
         const pageId = Object.keys(pages)[0];
+
         if (pages[pageId].thumbnail) {
             return pages[pageId].thumbnail.source;
         }
+        console.log(`${prefix} No image found for: ${planetName}`);
+        return null;
     } catch (error) {
-        console.error("Error fetching Wikipedia image:", error);
+        console.error(`${prefix} ${error.name}:`, error.message);
+        return null;
     }
-    return null;
 }
 
 async function fetchPlanetData(planetName, targetPrefix) {
+    const prefix = LOG_PREFIX.DBPEDIA;
+    console.log(`${prefix} Fetching data for: ${planetName} (${targetPrefix})`);
+
     const encodedPlanetName = planetName.replace(/ /g, '_');
     const query = buildDBPediaQuery(encodedPlanetName);
 
-    // Start fetching Wikipedia image in the background only for the main planet view
     if (targetPrefix === 'planet') {
         window.wikiImagePromise = fetchWikipediaImage(planetName);
     }
@@ -132,11 +173,12 @@ async function fetchPlanetData(planetName, targetPrefix) {
         const results = data.results.bindings[0];
 
         if (!results) {
+            console.error(`${prefix} No data found for: ${planetName}`);
             throw new Error('No data found');
         }
 
         const wikidataId = results.wikidataId?.value.split('/').pop();
-        console.log("Extracted Wikidata ID:", wikidataId);
+        console.log(`${prefix} Found Wikidata ID: ${wikidataId}`);
 
         if (wikidataId && targetPrefix === 'planet') {
             await fetchAndDisplayWikidataInfo(wikidataId);
@@ -144,12 +186,15 @@ async function fetchPlanetData(planetName, targetPrefix) {
 
         return processDBPediaResults(results, planetName, targetPrefix);
     } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error(`${LOG_PREFIX.ERROR} Failed to fetch planet data:`, error.message);
         throw error;
     }
 }
 
 async function fetchAndDisplayWikidataInfo(wikidataId) {
+    const prefix = LOG_PREFIX.WIKIDATA;
+    console.log(`${prefix} Fetching additional data for ID: ${wikidataId}`);
+
     const headers = {
         'Accept': 'application/sparql-results+json',
         'User-Agent': 'PlanetInfoViewer/1.0'
@@ -172,7 +217,7 @@ async function fetchAndDisplayWikidataInfo(wikidataId) {
         );
         displayAtmosphereData(atmosphereData.results.bindings);
     } catch (error) {
-        console.error("Error fetching Wikidata data:", error);
+        console.error(`${prefix} Failed to fetch additional data:`, error.message);
     }
 }
 
@@ -192,7 +237,12 @@ function processDBPediaResults(results, planetName, targetPrefix) {
             volume: results.volume ? parseFloat(results.volume.value) : null
         },
         satellites: processSatellites(results.satellites?.value),
-        parentBodies: processSatellites(results.parentBodies?.value)
+        parentBodies: processSatellites(results.parentBodies?.value),
+        externalLinks: {
+            wikipedia: `https://en.wikipedia.org/wiki/${planetName.replace(/ /g, '_')}`,
+            dbpedia: `http://dbpedia.org/resource/${planetName.replace(/ /g, '_')}`,
+            wikidata: results.wikidataId?.value
+        }
     };
 
     // Store data for comparison
@@ -357,11 +407,40 @@ function updateComparisonTable() {
     }).join('');
 }
 
+function generateExternalLinksHTML(externalLinks) {
+    return `
+        <div class="flex flex-wrap gap-4 mt-4">
+            <a href="${externalLinks.wikipedia}" target="_blank" rel="noopener noreferrer" 
+               class="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:underline">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12.09 13.119c-.936 1.932-2.217 4.548-2.853 5.728-.616 1.074-1.127.931-1.532.029-1.406-3.321-4.293-9.144-5.651-12.409-.251-.601-.441-.987-.619-1.139-.181-.15-.554-.24-1.122-.271C.103 5.033 0 4.982 0 4.898v-.455l.052-.045c.924-.005 5.401 0 5.401 0l.051.045v.434c0 .084-.103.135-.2.157-.74.108-.835.361-.492 1.005.646 1.212 3.636 7.254 4.172 8.286.406-.614 1.612-3.095 2.202-4.53.473-1.156.402-1.704-.699-1.875-.19-.029-.243-.134-.243-.213v-.434L10.3 4.128h4.147l.037.046v.434c0 .084-.103.135-.2.157-.776.108-.835.361-.505 1.005.646 1.212 2.839 5.728 3.136 6.39.784-1.577 2.384-5.042 2.779-6.075.209-.556.117-.745-.505-.852-.097-.022-.2-.073-.2-.157v-.434l.037-.046h3.546l.052.046v.434c0 .084-.104.135-.2.157-1.664.242-1.454.77-2.583 3.317-.718 1.627-3.419 7.075-3.839 7.915-.853 1.727-1.534 1.61-2.292-.181-.621-1.47-1.968-4.016-2.839-5.728z"/>
+                </svg>
+                Wikipedia
+            </a>
+            <a href="${externalLinks.dbpedia}" target="_blank" rel="noopener noreferrer" 
+               class="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:underline">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22c-5.523 0-10-4.477-10-10S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm1-10.414V15h-2v-4.414l-2.293 2.293-1.414-1.414L12 6.758l4.707 4.707-1.414 1.414L13 11.586z"/>
+                </svg>
+                DBpedia
+            </a>
+            <a href="${externalLinks.wikidata}" target="_blank" rel="noopener noreferrer" 
+               class="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:underline">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12.6 14.8l-.6.6-1.2-.6-.6-1.3-.4-1.5c-.8-.2-1.6-.4-2.4-.5l-.3-1.5.3-1.2.8-.8 1.2-.6 1.4-.1c.8.2 1.6.4 2.4.5l.3 1.5-.3 1.2-.8.8-1.2.6-1.4.1c-.2.8-.4 1.6-.5 2.4l.5 1.3zm3.8-4.3l-.6.6-1.2-.6-.6-1.3-.4-1.5c-.8-.2-1.6-.4-2.4-.5l-.3-1.5.3-1.2.8-.8 1.2-.6 1.4-.1c.8.2 1.6.4 2.4.5l.3 1.5-.3 1.2-.8.8-1.2.6-1.4.1c-.2.8-.4 1.6-.5 2.4l.5 1.3zm3.8-4.3l-.6.6-1.2-.6-.6-1.3-.4-1.5c-.8-.2-1.6-.4-2.4-.5l-.3-1.5.3-1.2.8-.8 1.2-.6 1.4-.1c.8.2 1.6.4 2.4.5l.3 1.5-.3 1.2-.8.8-1.2.6-1.4.1c-.2.8-.4 1.6-.5 2.4l.5 1.3z"/>
+                </svg>
+                Wikidata
+            </a>
+        </div>
+    `;
+}
+
 // Export functions for use in planet.html
 window.PlanetData = {
     fetchPlanetData,
     kelvinToCelsius,
     tempToPercent,
     updateComparisonTable,
-    fetchWikipediaImage
+    fetchWikipediaImage,
+    generateExternalLinksHTML
 }; 

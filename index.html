@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Explorateur Astronomique</title>
+    <title>Astronomical Explorer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -111,26 +111,6 @@
             background-color: rgba(0, 255, 247, 0.2);
             border-radius: 3px;
         }
-        .info-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 1rem;
-            padding: 1rem;
-            transition: all 0.3s ease;
-        }
-        .info-card:hover {
-            background: rgba(255, 255, 255, 0.08);
-        }
-        .modal-header {
-            position: sticky;
-            top: 0;
-            background: rgba(15, 23, 42, 0.9);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            z-index: 10;
-            padding: 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -140,15 +120,24 @@
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
                     <a href="index.html" class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                        Explorateur Astronomique
+                        Astronomical Explorer
                     </a>
                 </div>
                 <div class="flex space-x-4">
                     <a href="index.html" class="nav-link active px-4 py-2 rounded-lg text-white">
-                        Accueil
+                        Home
                     </a>
                     <a href="constellations.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
                         Constellations
+                    </a>
+                    <a href="blackholes.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Black Holes
+                    </a>
+                    <a href="planet.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Planets
+                    </a>
+                    <a href="galaxy.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Galaxies
                     </a>
                 </div>
             </div>
@@ -159,7 +148,7 @@
         <div class="content-container w-full max-w-3xl">
             <header class="text-center mb-8 pt-8">
                 <h1 class="text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                    Explorateur Astronomique
+                    Astronomical Explorer
                 </h1>
             </header>
             
@@ -168,29 +157,29 @@
                     <input 
                         type="text" 
                         id="searchInput" 
-                        placeholder="Rechercher une planète, galaxie..." 
+                        placeholder="Search for a planet, galaxy..." 
                         class="flex-1 bg-black/30 border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 transition-colors text-white placeholder-gray-400"
                     >
                     <select 
                         id="searchType" 
                         class="bg-black/30 border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 transition-colors text-white"
                     >
-                        <option value="all">Tout</option>
-                        <option value="planet">Planète</option>
-                        <option value="galaxy">Galaxie</option>
+                        <option value="all">All</option>
+                        <option value="planet">Planet</option>
+                        <option value="galaxy">Galaxy</option>
                         <option value="constellation">Constellation</option>
                     </select>
                     <button 
                         onclick="search()" 
                         class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-3 rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105"
                     >
-                        Rechercher
+                        Search
                     </button>
                 </div>
             </div>
 
             <div id="results" class="space-y-6">
-                <!-- Les résultats seront affichés ici -->
+                <!-- Results will be displayed here -->
             </div>
         </div>
     </div>
@@ -211,9 +200,9 @@
             <div class="modal-scroll">
                 <div id="modalContent" class="text-white space-y-6 p-6">
                     <div id="modalImage" class="w-full flex justify-center mb-6">
-                        <!-- L'image sera injectée ici -->
+                        <!-- Image will be injected here -->
                     </div>
-                    <!-- Le contenu détaillé sera injecté ici -->
+                    <!-- Detailed content will be injected here -->
                 </div>
             </div>
         </div>

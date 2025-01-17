@@ -45,6 +45,15 @@
         .active {
             color: white;
         }
+        .detail-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .detail-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -61,8 +70,17 @@
                     <a href="index.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
                         Home
                     </a>
-                    <a href="constellations.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                    <a href="constellations.html" class="nav-link active px-4 py-2 rounded-lg text-white">
                         Constellations
+                    </a>
+                    <a href="blackholes.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Black Holes
+                    </a>
+                    <a href="planet.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Planets
+                    </a>
+                    <a href="galaxy.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Galaxies
                     </a>
                 </div>
             </div>

@@ -243,6 +243,9 @@ function displayResults(results, searchType) {
         if (type === 'planet') {
             const planetName = name.split(' ')[0]; // On prend le premier mot du nom (ex: "Mars" dans "Mars (planet)")
             link = `planet.html?planetName=${planetName}`;
+        } else if(type === 'galaxy') {
+            const galaxyName = name.split(' ')[0]; // On prend le premier mot du nom (ex: "Mars" dans "Mars (planet)")
+            link = `galaxy-details.html?galaxyName=${name}`;
         }
         
         card.innerHTML = `
@@ -262,7 +265,12 @@ function displayResults(results, searchType) {
                         <a href="${link}" class="inline-block bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
                             View details
                         </a>
-                    ` : ''}
+                    ` : 
+                    (type === 'galaxy' ? `
+                        <a href="${link}" class="inline-block bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
+                            View details
+                        </a>
+                    ` : '')}
                 </div>
             </div>
         `;

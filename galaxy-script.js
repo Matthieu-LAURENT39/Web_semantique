@@ -64,7 +64,13 @@ function loadGalaxies() {
             data.results.bindings.forEach(element => {
                 try {
                     const clone = template.content.cloneNode(true);
-                    
+                    clone.querySelector(".galaxy-card").onclick = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const name = encodeURIComponent(element.name.value);
+                        const detailsUrl = `galaxy-details.html?galaxyName=${name}`;
+                        window.location.href = detailsUrl;
+                    }
                     // Set image with error handling
                     const img = clone.querySelector("img");
                     if (img) {
@@ -90,22 +96,6 @@ function loadGalaxies() {
                             element.description.value.substring(0, 150) + "..." : 
                             "No description available";
                         desc.textContent = description;
-                    }
-
-                    // Set metadata
-                    const spans = clone.querySelectorAll(".flex.gap-4 span");
-                    if (spans.length >= 2) {
-                        if (element.distance) {
-                            spans[0].textContent = `Distance: ${Math.round(element.distance.value / 30856775814913673).toLocaleString()} light years`;
-                        } else {
-                            spans[0].textContent = "Distance: Unknown";
-                        }
-                        
-                        if (element.type) {
-                            spans[1].textContent = `Type: ${element.type.value.split("/").pop()}`;
-                        } else {
-                            spans[1].textContent = "Type: Unknown";
-                        }
                     }
 
                     resultsSection.appendChild(clone);
@@ -380,19 +370,6 @@ function displayResults(data) {
                     element.description.value.substring(0, 150) + "..." : 
                     "No description available";
                 desc.textContent = description;
-            }
-
-            // Set metadata
-            const spans = clone.querySelectorAll(".flex.gap-4 span");
-            if (spans.length >= 2) {
-                if (element.distance) {
-                    spans[0].textContent = `Distance: ${Math.round(element.distance.value / 30856775814913673).toLocaleString()} light years`;
-                } else {
-                    spans[0].textContent = "Distance: Unknown";
-                }
-                
-                // Remove type display since we don't have reliable type data
-                spans[1].textContent = "";
             }
 
             resultsSection.appendChild(clone);

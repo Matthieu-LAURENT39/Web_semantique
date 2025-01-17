@@ -77,25 +77,62 @@ function buildWikidataLabelsQuery(wikidataId) {
 
 function buildAtmosphereQuery(wikidataId) {
     return `
-        SELECT ?atmosphere ?atmosphereLabel ?material ?materialLabel ?proportion WHERE {
-            ?atmosphere p:P31 ?statement0;
-                       p:P361 ?statement1.
-            ?statement0 (ps:P31/(wdt:P279*)) wd:Q19704068.
-            ?statement1 (ps:P361/(wdt:P279*)) wd:${wikidataId}.
+        SELECT ?atmosphere ?atmosphereLabel ?material ?materialLabel ?proportion 
+               ?radius ?radiusUnit ?radiusUnitLabel ?appliesTo ?appliesToLabel
+        WHERE {
+            OPTIONAL {
+                ?atmosphere p:P31 ?statement0;
+                           p:P361 ?statement1.
+                ?statement0 (ps:P31/(wdt:P279*)) wd:Q19704068.
+                ?statement1 (ps:P361/(wdt:P279*)) wd:${wikidataId}.
+                
+                OPTIONAL {
+                    ?atmosphere p:P186 ?materialStatement.
+                    ?materialStatement ps:P186 ?material;
+                                     pq:P1107 ?proportion.
+                }
+            }
             
             OPTIONAL {
-                ?atmosphere p:P186 ?materialStatement.
-                ?materialStatement ps:P186 ?material;
-                                 pq:P1107 ?proportion.
+                wd:${wikidataId} p:P2120 ?radiusStatement.
+                ?radiusStatement ps:P2120 ?radius;
+                                psv:P2120 ?radiusValue.
+                ?radiusValue wikibase:quantityUnit ?radiusUnit.
+                OPTIONAL {
+                    ?radiusStatement pq:P518 ?appliesTo.
+                }
             }
             
             SERVICE wikibase:label { 
                 bd:serviceParam wikibase:language "en".
                 ?atmosphere rdfs:label ?atmosphereLabel.
                 ?material rdfs:label ?materialLabel.
+                ?radiusUnit rdfs:label ?radiusUnitLabel.
+                ?appliesTo rdfs:label ?appliesToLabel.
             }
         }
         ORDER BY DESC(?proportion)
+    `;
+}
+
+function buildRadiusQuery(wikidataId) {
+    return `
+        SELECT ?radius ?radiusUnit ?radiusUnitLabel ?appliesTo ?appliesToLabel
+        WHERE {
+            wd:${wikidataId} p:P2120 ?radiusStatement.
+            ?radiusStatement ps:P2120 ?radius;
+                            psv:P2120 ?radiusValue.
+            ?radiusValue wikibase:quantityUnit ?radiusUnit.
+            OPTIONAL {
+                ?radiusStatement pq:P518 ?appliesTo.
+            }
+            
+            SERVICE wikibase:label { 
+                bd:serviceParam wikibase:language "en".
+                ?radiusUnit rdfs:label ?radiusUnitLabel.
+                ?appliesTo rdfs:label ?appliesToLabel.
+            }
+        }
     `;
 }
 
@@ -144,8 +181,12 @@ async function fetchPlanetData(planetName, targetPrefix) {
         const wikidataId = results.wikidataId?.value.split('/').pop();
         console.log("Extracted Wikidata ID:", wikidataId);
 
-        if (wikidataId && targetPrefix === 'planet') {
-            await fetchAndDisplayWikidataInfo(wikidataId);
+        if (wikidataId) {
+            if (targetPrefix === 'planet') {
+                await fetchAndDisplayWikidataInfo(wikidataId);
+            }
+            // Fetch radius data for both planet and Earth
+            await fetchAndDisplayRadiusInfo(wikidataId, targetPrefix);
         }
 
         return processDBPediaResults(results, planetName, targetPrefix);
@@ -179,6 +220,24 @@ async function fetchAndDisplayWikidataInfo(wikidataId) {
         displayAtmosphereData(atmosphereData.results.bindings);
     } catch (error) {
         console.error("Error fetching Wikidata data:", error);
+    }
+}
+
+async function fetchAndDisplayRadiusInfo(wikidataId, targetPrefix) {
+    const headers = {
+        'Accept': 'application/sparql-results+json',
+        'User-Agent': 'PlanetInfoViewer/1.0'
+    };
+
+    try {
+        const radiusData = await fetchSPARQLData(
+            WIKIDATA_ENDPOINT,
+            buildRadiusQuery(wikidataId),
+            headers
+        );
+        displayRadiusData(radiusData.results.bindings, targetPrefix);
+    } catch (error) {
+        console.error("Error fetching radius data:", error);
     }
 }
 
@@ -251,6 +310,31 @@ function displayLanguageLabels(labels) {
         </div>
     `;
     nameDiv.insertAdjacentHTML('afterend', languageSection);
+}
+
+function processRadiusData(results) {
+    const radiusData = {};
+
+    for (const result of results) {
+        if (result.radius && result.appliesTo) {
+            const type = result.appliesTo.value;
+            const value = parseFloat(result.radius.value);
+            const unit = result.radiusUnitLabel?.value || 'km';
+            const label = result.appliesToLabel?.value || '';
+
+            // Map to radius types
+            if (type.includes('Q2796622')) {
+                radiusData.mean = { value, unit, label: 'Mean Radius' };
+            } else if (type.includes('Q23538')) {
+                radiusData.equatorial = { value, unit, label: 'Equatorial Radius' };
+            } else if (type.includes('Q28809093') || type.includes('Q183273')) {
+                // Handle both ways of specifying polar radius
+                radiusData.polar = { value, unit, label: 'Polar Radius' };
+            }
+        }
+    }
+
+    return radiusData;
 }
 
 function displayAtmosphereData(atmosphereResults) {
@@ -328,6 +412,45 @@ function generateAtmosphereLegend(results) {
         }).join('');
 }
 
+function displayRadiusData(results, targetPrefix) {
+    const radiusData = processRadiusData(results);
+
+    // Update the appropriate column
+    const container = document.getElementById(`${targetPrefix}-radius-info`);
+    if (!container) return;
+
+    const content = Object.entries(radiusData).length > 0 ? `
+        <div class="glass rounded-xl p-4">
+            <h3 class="font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                ${targetPrefix === 'planet' ?
+            document.getElementById("planet-table-header").textContent :
+            'Earth'}
+            </h3>
+            <div class="space-y-4">
+                ${Object.entries(radiusData).map(([type, data]) => `
+                    <div>
+                        <div class="text-gray-300">${data.label}</div>
+                        <div class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                            ${data.value.toLocaleString()} ${data.unit}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    ` : `
+        <div class="glass rounded-xl p-4">
+            <h3 class="font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                ${targetPrefix === 'planet' ?
+        document.getElementById("planet-table-header").textContent :
+        'Earth'}
+            </h3>
+            <p class="text-gray-500 italic">No radius data available</p>
+        </div>
+    `;
+
+    container.innerHTML = content;
+}
+
 // Display functions for comparison table
 function updateComparisonTable() {
     if (!window.planetData || !window.earthData) return;
@@ -382,5 +505,6 @@ window.PlanetData = {
     kelvinToCelsius,
     tempToPercent,
     updateComparisonTable,
-    fetchWikipediaImage
+    fetchWikipediaImage,
+    fetchAndDisplayRadiusInfo
 }; 

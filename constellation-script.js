@@ -30,41 +30,18 @@ function createSPARQLQuery(searchTerm) {
         PREFIX dct: <http://purl.org/dc/terms/>
         
         SELECT DISTINCT ?constellation ?name ?abstract (SAMPLE(?img) as ?image) 
-            ?stars ?area ?rightAscension ?declination ?symbolism 
-            ?meteorShowers ?brightestStar ?hemisphere ?season
-            ?zodiacSign ?zodiacSignName ?numberOfPlanets ?month ?family
-            ?latmin ?latmax ?neareststarname
-            (GROUP_CONCAT(DISTINCT ?neighbourName; SEPARATOR=", ") as ?neighbours)
+            ?symbolism ?zodiacSign ?zodiacSignName ?month
         WHERE {
             ?constellation a dbo:Constellation ;
                 rdfs:label ?name ;
                 dbo:abstract ?abstract .
             OPTIONAL { ?constellation foaf:depiction ?img }
-            OPTIONAL { ?constellation dbp:stars ?stars }
-            OPTIONAL { ?constellation dbo:area ?area }
-            OPTIONAL { ?constellation dbp:rightAscension ?rightAscension }
-            OPTIONAL { ?constellation dbp:declination ?declination }
-            OPTIONAL { ?constellation dbp:symbolism ?symbolism }
-            OPTIONAL { ?constellation dbp:meteorShowers ?meteorShowers }
-            OPTIONAL { ?constellation dbp:brighteststarname ?brightestStar }
-            OPTIONAL { ?constellation dbp:hemisphere ?hemisphere }
-            OPTIONAL { ?constellation dbp:season ?season }
             OPTIONAL { 
                 ?constellation dbp:zodiacSign ?zodiacSign .
                 ?zodiacSign rdfs:label ?zodiacSignName .
                 FILTER(LANG(?zodiacSignName) = 'en')
             }
-            OPTIONAL { ?constellation dbp:numberOfPlanets ?numberOfPlanets }
             OPTIONAL { ?constellation dbp:month ?month }
-            OPTIONAL { ?constellation dbp:family ?family }
-            OPTIONAL { ?constellation dbp:latmin ?latmin }
-            OPTIONAL { ?constellation dbp:latmax ?latmax }
-            OPTIONAL { ?constellation dbp:neareststarname ?neareststarname }
-            OPTIONAL { 
-                ?constellation dbp:bordering ?neighbour .
-                ?neighbour rdfs:label ?neighbourName .
-                FILTER(LANG(?neighbourName) = 'en')
-            }
             FILTER (LANG(?abstract) = 'en')
             FILTER (LANG(?name) = 'en')
             FILTER (!CONTAINS(?abstract, "may refer to"))
@@ -77,11 +54,8 @@ function createSPARQLQuery(searchTerm) {
 
     query += `
         }
-        GROUP BY ?constellation ?name ?abstract ?stars ?area ?rightAscension ?declination 
-            ?symbolism ?meteorShowers ?brightestStar ?hemisphere ?season
-            ?zodiacSign ?zodiacSignName ?numberOfPlanets ?month ?family
-            ?latmin ?latmax ?neareststarname
-            ?neighbours
+        GROUP BY ?constellation ?name ?abstract ?symbolism
+            ?zodiacSign ?zodiacSignName ?month
         ORDER BY ?name
         LIMIT 10
     `;

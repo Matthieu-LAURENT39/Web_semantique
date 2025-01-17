@@ -12,29 +12,16 @@ async function getConstellationData() {
             PREFIX dbp: <http://dbpedia.org/property/>
             
             SELECT DISTINCT ?constellation ?name ?abstract (SAMPLE(?img) as ?image) 
-                ?stars ?area ?rightAscension ?declination ?symbolism 
-                ?meteorShowers ?brightestStar ?hemisphere ?season
-                ?zodiacSign ?zodiacSignName ?numberOfPlanets ?month ?family
-                ?latmin ?latmax ?neareststarname
+                ?symbolism ?brightestStar ?month ?latmin ?latmax ?neareststarname
                 (GROUP_CONCAT(DISTINCT ?neighbourName; SEPARATOR=", ") as ?neighbours)
             WHERE {
                 ?constellation a dbo:Constellation ;
                     rdfs:label ?name ;
                     dbo:abstract ?abstract .
                 OPTIONAL { ?constellation foaf:depiction ?img }
-                OPTIONAL { ?constellation dbp:stars ?stars }
-                OPTIONAL { ?constellation dbo:area ?area }
-                OPTIONAL { ?constellation dbp:rightAscension ?rightAscension }
-                OPTIONAL { ?constellation dbp:declination ?declination }
                 OPTIONAL { ?constellation dbp:symbolism ?symbolism }
-                OPTIONAL { ?constellation dbp:meteorShowers ?meteorShowers }
-                OPTIONAL { ?constellation dbp:brightestStar ?brightestStar }
-                OPTIONAL { ?constellation dbp:hemisphere ?hemisphere }
-                OPTIONAL { ?constellation dbp:season ?season }
-                OPTIONAL { ?constellation dbp:zodiacSign ?zodiacSign }
-                OPTIONAL { ?constellation dbp:numberOfPlanets ?numberOfPlanets }
+                OPTIONAL { ?constellation dbp:brighteststarname ?brightestStar }
                 OPTIONAL { ?constellation dbp:month ?month }
-                OPTIONAL { ?constellation dbp:family ?family }
                 OPTIONAL { ?constellation dbp:latmin ?latmin }
                 OPTIONAL { ?constellation dbp:latmax ?latmax }
                 OPTIONAL { ?constellation dbp:neareststarname ?neareststarname }
@@ -44,9 +31,8 @@ async function getConstellationData() {
                 }
                 FILTER(CONTAINS(LCASE(?name), LCASE("${decodeURIComponent(constellationName)}")))
             }
-            GROUP BY ?constellation ?name ?abstract ?stars ?area ?rightAscension ?declination 
-                ?symbolism ?meteorShowers ?brightestStar ?hemisphere ?season
-                ?zodiacSign ?zodiacSignName ?numberOfPlanets ?month ?family
+            GROUP BY ?constellation ?name ?abstract 
+                ?symbolism ?brightestStar ?month
                 ?latmin ?latmax ?neareststarname
             LIMIT 1
         `;
@@ -107,18 +93,6 @@ function formatConstellationDetails(constellation) {
 
     // Basic Information
     const basicInfo = [];
-    if (constellation.area) basicInfo.push(`<div class="flex justify-between items-center">
-        <span class="text-gray-400">Surface</span>
-        <span>${parseFloat(constellation.area).toFixed(2)} degrés carrés</span>
-    </div>`);
-    if (constellation.rightAscension) basicInfo.push(`<div class="flex justify-between items-center">
-        <span class="text-gray-400">Ascension droite</span>
-        <span>${constellation.rightAscension}</span>
-    </div>`);
-    if (constellation.declination) basicInfo.push(`<div class="flex justify-between items-center">
-        <span class="text-gray-400">Déclinaison</span>
-        <span>${constellation.declination}</span>
-    </div>`);
     if (constellation.latmin && constellation.latmax) {
         basicInfo.push(`<div class="flex justify-between items-center">
             <span class="text-gray-400">Latitude</span>
@@ -128,32 +102,28 @@ function formatConstellationDetails(constellation) {
     
     if (basicInfo.length > 0) {
         sections.push({
-            title: "Informations techniques",
+            title: "Basic Information",
             content: basicInfo.join('<div class="border-b border-gray-700 my-2"></div>')
         });
     }
 
     // Stars Information
     const starInfo = [];
-    if (constellation.stars) starInfo.push(`<div class="flex justify-between items-center">
-        <span class="text-gray-400">Étoiles principales</span>
-        <span>${constellation.stars}</span>
-    </div>`);
     if (constellation.brightestStar) starInfo.push(`<div class="flex justify-between items-center">
-        <span class="text-gray-400">Étoile la plus brillante</span>
+        <span class="text-gray-400">Brightest Star</span>
         <span>${constellation.brightestStar}</span>
     </div>`);
     if (constellation.neareststarname) {
         const nearestStars = constellation.neareststarname.split(',').map(star => star.trim());
         starInfo.push(`<div class="flex justify-between items-center">
-            <span class="text-gray-400">Étoiles proches</span>
+            <span class="text-gray-400">Nearest Stars</span>
             <span class="text-right">${nearestStars.join(', ')}</span>
         </div>`);
     }
     
     if (starInfo.length > 0) {
         sections.push({
-            title: "Étoiles",
+            title: "Stars Information",
             content: starInfo.join('<div class="border-b border-gray-700 my-2"></div>')
         });
     }
@@ -161,19 +131,13 @@ function formatConstellationDetails(constellation) {
     // Symbolism and Cultural Significance
     if (constellation.symbolism) {
         sections.push({
-            title: "Symbolisme",
+            title: "Symbolism",
             content: `<p class="text-gray-300 leading-relaxed">${constellation.symbolism}</p>`
         });
     }
 
     // Zodiac Information
     const zodiacInfo = [];
-    if (constellation.zodiacSignName) {
-        zodiacInfo.push(`<div class="flex justify-between items-center">
-            <span class="text-gray-400">Signe du zodiaque</span>
-            <span>${constellation.zodiacSignName}</span>
-        </div>`);
-    }
     if (constellation.month) zodiacInfo.push(`<div class="flex justify-between items-center">
         <span class="text-gray-400">Mois</span>
         <span>${constellation.month}</span>
@@ -181,51 +145,15 @@ function formatConstellationDetails(constellation) {
     
     if (zodiacInfo.length > 0) {
         sections.push({
-            title: "Information zodiacale",
+            title: "Zodiac Information",
             content: zodiacInfo.join('<div class="border-b border-gray-700 my-2"></div>')
-        });
-    }
-
-    // Location and Visibility
-    const visibilityInfo = [];
-    if (constellation.hemisphere) visibilityInfo.push(`<div class="flex justify-between items-center">
-        <span class="text-gray-400">Hémisphère</span>
-        <span>${constellation.hemisphere}</span>
-    </div>`);
-    if (constellation.season) visibilityInfo.push(`<div class="flex justify-between items-center">
-        <span class="text-gray-400">Meilleure saison</span>
-        <span>${constellation.season}</span>
-    </div>`);
-    
-    if (visibilityInfo.length > 0) {
-        sections.push({
-            title: "Visibilité",
-            content: visibilityInfo.join('<div class="border-b border-gray-700 my-2"></div>')
-        });
-    }
-
-    // Celestial Objects
-    const celestialInfo = [];
-    if (constellation.numberOfPlanets) celestialInfo.push(`<div class="flex justify-between items-center">
-        <span class="text-gray-400">Nombre de planètes</span>
-        <span>${constellation.numberOfPlanets}</span>
-    </div>`);
-    if (constellation.meteorShowers) celestialInfo.push(`<div class="flex justify-between items-center">
-        <span class="text-gray-400">Pluies de météores</span>
-        <span>${constellation.meteorShowers}</span>
-    </div>`);
-    
-    if (celestialInfo.length > 0) {
-        sections.push({
-            title: "Objets célestes",
-            content: celestialInfo.join('<div class="border-b border-gray-700 my-2"></div>')
         });
     }
 
     // Neighboring Constellations
     if (constellation.neighbours) {
         sections.push({
-            title: "Constellations voisines",
+            title: "Bording Constellations",
             content: `<p class="text-gray-300">${constellation.neighbours}</p>`
         });
     }

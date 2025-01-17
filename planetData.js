@@ -55,7 +55,15 @@ function buildDBPediaQuery(planetName) {
                     ?planet ^dbp:satelliteOf ?satellite
                 }
             }
-            OPTIONAL { ?planet dbp:satelliteOf ?parentBody }
+            OPTIONAL { 
+                {
+                    ?planet dbp:satelliteOf ?parentBody 
+                } UNION {
+                    ?planet dbo:orbits ?parentBody
+                } UNION {
+                    ?planet dbp:orbits ?parentBody
+                }
+            }
             FILTER (lang(?abstract) = "en")
         } 
         GROUP BY ?abstract ?maxTemp ?meanTemp ?minTemp ?averageSpeed ?density ?surfaceArea ?volume ?wikidataId

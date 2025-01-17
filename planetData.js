@@ -298,8 +298,6 @@ function displayLanguageLabels(labels) {
 }
 
 function displayAtmosphereData(atmosphereResults) {
-    if (atmosphereResults.length === 0) return;
-
     const atmosphereSection = document.createElement('div');
     atmosphereSection.className = 'bg-white p-6 shadow-md rounded-md mb-4';
     atmosphereSection.innerHTML = generateAtmosphereHTML(atmosphereResults);
@@ -311,10 +309,12 @@ function displayAtmosphereData(atmosphereResults) {
 }
 
 function generateAtmosphereHTML(atmosphereResults) {
+    const hasComposition = atmosphereResults && atmosphereResults.some(r => r.proportion && r.materialLabel);
+
     return `
         <h2 class="text-lg font-semibold mb-4">Atmosphere Composition</h2>
         <div class="space-y-4">
-            ${atmosphereResults.some(r => r.proportion) ? `
+            ${hasComposition ? `
                 <div class="relative h-8 bg-gray-200 rounded-lg overflow-hidden">
                     ${generateAtmosphereBarSegments(atmosphereResults)}
                 </div>
@@ -322,7 +322,15 @@ function generateAtmosphereHTML(atmosphereResults) {
                     ${generateAtmosphereLegend(atmosphereResults)}
                 </div>
             ` : `
-                <p class="text-gray-600 italic">No detailed composition data available</p>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="flex items-center gap-2 text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p>Atmospheric composition data is not available in the database.</p>
+                    </div>
+                    <p class="mt-2 text-sm text-gray-500">This could be because the celestial body has no significant atmosphere or because the data hasn't been added to Wikidata yet.</p>
+                </div>
             `}
         </div>
     `;

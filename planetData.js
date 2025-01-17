@@ -243,31 +243,39 @@ function displayLanguageLabels(labels) {
 }
 
 function displayAtmosphereData(atmosphereResults) {
-    if (atmosphereResults.length === 0) return;
-
     const atmosphereSection = document.createElement('div');
-    atmosphereSection.className = 'bg-white p-6 shadow-md rounded-md mb-4';
+    atmosphereSection.className = 'glass rounded-xl p-6 mb-6';
     atmosphereSection.innerHTML = generateAtmosphereHTML(atmosphereResults);
 
-    const temperatureSection = document.querySelector('.grid.grid-cols-2.gap-4.mb-4');
+    const temperatureSection = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2.gap-6.mb-6');
     if (temperatureSection) {
         temperatureSection.parentNode.insertBefore(atmosphereSection, temperatureSection);
     }
 }
 
 function generateAtmosphereHTML(atmosphereResults) {
+    const hasComposition = atmosphereResults && atmosphereResults.some(r => r.proportion && r.materialLabel);
+
     return `
-        <h2 class="text-lg font-semibold mb-4">Atmosphere Composition</h2>
+        <h2 class="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Atmosphere Composition</h2>
         <div class="space-y-4">
-            ${atmosphereResults.some(r => r.proportion) ? `
-                <div class="relative h-8 bg-gray-200 rounded-lg overflow-hidden">
+            ${hasComposition ? `
+                <div class="relative h-8 bg-white/5 rounded-lg overflow-hidden">
                     ${generateAtmosphereBarSegments(atmosphereResults)}
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                     ${generateAtmosphereLegend(atmosphereResults)}
                 </div>
             ` : `
-                <p class="text-gray-600 italic">No detailed composition data available</p>
+                <div class="glass rounded-xl p-4">
+                    <div class="flex items-center gap-2 text-gray-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p>Atmospheric composition data is not available in the database.</p>
+                    </div>
+                    <p class="mt-2 text-sm text-gray-500">This could be because the celestial body has no significant atmosphere or because the data hasn't been added to Wikidata yet.</p>
+                </div>
             `}
         </div>
     `;
@@ -278,7 +286,7 @@ function generateAtmosphereBarSegments(results) {
         .filter(r => r.proportion)
         .map((r, index) => {
             const percentage = parseFloat(r.proportion.value) * 100;
-            const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500', 'bg-indigo-500'];
+            const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-purple-500', 'bg-indigo-500'];
             const left = index === 0 ? 0 : results
                 .filter(r => r.proportion)
                 .slice(0, index)
@@ -296,13 +304,13 @@ function generateAtmosphereLegend(results) {
     return results
         .filter(r => r.proportion && r.materialLabel)
         .map((r, index) => {
-            const colors = ['text-blue-500', 'text-green-500', 'text-yellow-500', 'text-red-500', 'text-purple-500', 'text-indigo-500'];
+            const colors = ['text-blue-500', 'text-emerald-500', 'text-amber-500', 'text-rose-500', 'text-purple-500', 'text-indigo-500'];
             return `
                 <div class="flex items-center gap-2">
                     <div class="w-3 h-3 rounded-full ${colors[index % colors.length].replace('text-', 'bg-')}"></div>
                     <div>
-                        <div class="font-medium">${r.materialLabel.value}</div>
-                        <div class="text-sm text-gray-600">${(parseFloat(r.proportion.value) * 100).toFixed(2)}%</div>
+                        <div class="font-medium text-gray-200">${r.materialLabel.value}</div>
+                        <div class="text-sm text-gray-400">${(parseFloat(r.proportion.value) * 100).toFixed(2)}%</div>
                     </div>
                 </div>
             `;

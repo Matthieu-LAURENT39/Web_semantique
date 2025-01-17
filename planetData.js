@@ -455,21 +455,53 @@ function createSizeComparison(planetRadius, earthRadius) {
 
     return `
         <div class="mt-8 text-center">
-            <div class="relative inline-block" style="width: 400px; height: 350px;">
-                <svg width="400" height="400" class="absolute top-0 left-0">
+            <style>
+                .planet-ellipse {
+                    transition: transform 0.3s ease-out;
+                }
+                .planet-group:hover .selected-planet {
+                    transform: translateX(200px);
+                }
+                .planet-group:hover .earth {
+                    transform: translateX(-200px);
+                }
+                .planet-label {
+                    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+                    opacity: 0.7;
+                }
+                .planet-group:hover .planet-label {
+                    opacity: 1;
+                }
+                .planet-group:hover .selected-planet-label {
+                    transform: translateX(200px);
+                }
+                .planet-group:hover .earth-label {
+                    transform: translateX(-200px);
+                }
+            </style>
+            <div class="relative inline-block planet-group" style="width: 800px; height: 350px;">
+                <svg width="800" height="400" class="absolute top-0 left-0">
                     <!-- Planet ellipse -->
-                    <ellipse cx="200" cy="200" rx="${planetWidth}" ry="${planetHeight}"
-                            class="fill-cyan-500/20 stroke-cyan-500" stroke-width="2"/>
+                    <g class="planet-ellipse selected-planet">
+                        <ellipse cx="400" cy="200" rx="${planetWidth}" ry="${planetHeight}"
+                                class="fill-cyan-500/20 stroke-cyan-500" stroke-width="2"/>
+                    </g>
                     <!-- Earth ellipse -->
-                    <ellipse cx="200" cy="200" rx="${earthWidth}" ry="${earthHeight}"
-                            class="fill-blue-500/20 stroke-blue-500" stroke-width="2" stroke-dasharray="4"/>
+                    <g class="planet-ellipse earth">
+                        <ellipse cx="400" cy="200" rx="${earthWidth}" ry="${earthHeight}"
+                                class="fill-blue-500/20 stroke-blue-500" stroke-width="2" stroke-dasharray="4"/>
+                    </g>
                     <!-- Labels -->
-                    <text x="200" y="${200 - planetHeight - 20}" text-anchor="middle" class="fill-cyan-500">Selected Planet</text>
-                    <text x="200" y="${200 - earthHeight - 20}" text-anchor="middle" class="fill-blue-500">Earth</text>
+                    <text x="400" y="${200 - planetHeight - 20}" text-anchor="middle" 
+                          class="fill-cyan-500 planet-label selected-planet-label">Selected Planet</text>
+                    <text x="400" y="${200 - earthHeight - 20}" text-anchor="middle" 
+                          class="fill-blue-500 planet-label earth-label">Earth</text>
                 </svg>
             </div>
             <p class="text-gray-300 mt-4">
                 Size comparison (solid: selected planet, dashed: Earth)
+                <br>
+                <span class="text-sm text-gray-400">(Hover to separate)</span>
             </p>
             <p class="text-gray-300 mt-2 text-xl font-bold">
                 Selected planet is ${sizeRatio}× the size of Earth at the equator

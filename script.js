@@ -49,7 +49,7 @@ function buildQuery(searchTerm, searchType) {
     
     if (searchType === 'all') {
         query = `
-            SELECT DISTINCT ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars WHERE {
+            SELECT DISTINCT ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars (SAMPLE(?img) as ?thumbnail) WHERE {
                 {
                     ?entity a dbo:Planet ;
                            rdfs:label ?label ;
@@ -57,6 +57,13 @@ function buildQuery(searchTerm, searchType) {
                     BIND("planet" AS ?type)
                     OPTIONAL { ?entity dbo:mass ?mass }
                     OPTIONAL { ?entity dbo:meanRadius ?radius }
+                    OPTIONAL { 
+                        {
+                            ?entity foaf:depiction ?img
+                        } UNION {
+                            ?entity dbp:image ?img
+                        }
+                    }
                 }
                 UNION
                 {
@@ -64,6 +71,7 @@ function buildQuery(searchTerm, searchType) {
                            rdfs:label ?label ;
                            dbo:abstract ?abstract .
                     BIND("galaxy" AS ?type)
+                    OPTIONAL { ?entity dbo:thumbnail ?img }
                 }
                 UNION
                 {
@@ -73,11 +81,13 @@ function buildQuery(searchTerm, searchType) {
                     BIND("constellation" AS ?type)
                     OPTIONAL { ?entity dbo:area ?area }
                     OPTIONAL { ?entity dbp:stars ?stars }
+                    OPTIONAL { ?entity dbo:thumbnail ?img }
                 }
                 FILTER(LANG(?label) = 'fr')
                 FILTER(LANG(?abstract) = 'fr')
                 FILTER(${createFlexibleFilter('?label')})
             }
+            GROUP BY ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars
             ORDER BY ASC(STRLEN(?label))
             LIMIT 30
         `;
@@ -85,25 +95,34 @@ function buildQuery(searchTerm, searchType) {
         switch(searchType) {
             case 'planet':
                 query = `
-                    SELECT DISTINCT ?entity ?label ?abstract ?mass ?radius WHERE {
+                    SELECT DISTINCT ?entity ?label ?abstract ?mass ?radius (SAMPLE(?img) as ?thumbnail) WHERE {
                         ?entity a dbo:Planet ;
                                rdfs:label ?label ;
                                dbo:abstract ?abstract .
                         OPTIONAL { ?entity dbo:mass ?mass }
                         OPTIONAL { ?entity dbo:meanRadius ?radius }
+                        OPTIONAL { 
+                            {
+                                ?entity foaf:depiction ?img
+                            } UNION {
+                                ?entity dbp:image ?img
+                            }
+                        }
                         FILTER(LANG(?label) = 'fr')
                         FILTER(LANG(?abstract) = 'fr')
                         FILTER(${createFlexibleFilter('?label')})
                     }
+                    GROUP BY ?entity ?label ?abstract ?mass ?radius
                     LIMIT 15
                 `;
                 break;
             case 'galaxy':
                 query = `
-                    SELECT DISTINCT ?entity ?label ?abstract WHERE {
+                    SELECT DISTINCT ?entity ?label ?abstract ?thumbnail WHERE {
                         ?entity a dbo:Galaxy ;
                                rdfs:label ?label ;
                                dbo:abstract ?abstract .
+                        OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
                         FILTER(LANG(?label) = 'fr')
                         FILTER(LANG(?abstract) = 'fr')
                         FILTER(${createFlexibleFilter('?label')})
@@ -113,12 +132,13 @@ function buildQuery(searchTerm, searchType) {
                 break;
             case 'constellation':
                 query = `
-                    SELECT DISTINCT ?entity ?label ?abstract ?area ?stars WHERE {
+                    SELECT DISTINCT ?entity ?label ?abstract ?area ?stars ?thumbnail WHERE {
                         ?entity a dbo:Constellation ;
                                rdfs:label ?label ;
                                dbo:abstract ?abstract .
                         OPTIONAL { ?entity dbo:area ?area }
                         OPTIONAL { ?entity dbp:stars ?stars }
+                        OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
                         FILTER(LANG(?label) = 'fr')
                         FILTER(LANG(?abstract) = 'fr')
                         FILTER(${createFlexibleFilter('?label')})
@@ -253,6 +273,12 @@ function showDetails(index, result, type) {
     modalTitle.textContent = label;
     
     let content = `
+        <div id="modalImage" class="w-full flex justify-center mb-6">
+            ${result.thumbnail?.value ? 
+                `<img src="${result.thumbnail.value}" alt="${label}" 
+                     class="rounded-lg max-h-[300px] object-cover shadow-lg" />` 
+                : ''}
+        </div>
         <div class="space-y-6">
             <div class="info-card">
                 <p class="text-gray-300 leading-relaxed text-lg">

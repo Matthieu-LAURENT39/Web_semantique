@@ -218,132 +218,16 @@ function displayResults(results, searchType) {
 
 // Fonction pour fetch les détails d'une entité
 function loadDetails(entityURI, type) {
+    const baseUrl = type === "astronaut" ? "astronaut_detail.html" : "mission_detail.html";   
+    const url = `${baseUrl}?uri=${encodeURIComponent(entityURI)}`; 
     if (type == "astronaut"){
-        loadAstronautDetails(entityURI)
+        window.location.href = url;
     }
     else {
         console.log("todo")
     }
 }
 
-// TODO: fonction pour fetch les détails d'une mission en particulier
-
-// Fonction pour fetch les détails d'un astronaute en particulier 
-async function loadAstronautDetails(astronautURI) {
-    console.log(astronautURI)
-    try {
-        let query = `
-            SELECT DISTINCT ?label ?abstract ?birthDate 
-                SAMPLE(?thumbnail) as ?img
-                (GROUP_CONCAT(DISTINCT ?one_status; separator=", ") AS ?status)
-                (GROUP_CONCAT(DISTINCT ?mission; separator=", ") AS ?missions)
-                (GROUP_CONCAT(DISTINCT ?type; separator=", ") AS ?types)
-                (GROUP_CONCAT(DISTINCT ?birthplace; separator=", ") AS ?birthplaces)
-                (COALESCE(?n1, ?n2) as ?nationality)
-                (GROUP_CONCAT(DISTINCT ?nationality; separator=", ") AS ?nationalities)
-                                
-                WHERE {
-                    <${astronautURI}> rdfs:label ?label ;
-                                                                foaf:depiction ?thumbnail ;
-                                                                dbo:abstract ?abstract.
-                    OPTIONAL { <${astronautURI}> dbo:birthPlace ?birthplace. }
-                    OPTIONAL { <${astronautURI}> dbo:birthDate ?birthDate. }
-                    OPTIONAL { <${astronautURI}> dbp:status ?one_status. }
-                    OPTIONAL { <${astronautURI}> dbp:type ?type. }
-                    OPTIONAL { <${astronautURI}> dbo:mission ?mission. }
-                    OPTIONAL { <${astronautURI}> dbo:nationality ?n1. }
-                    OPTIONAL { <${astronautURI}> dbp:nationality ?n2. }
-                    FILTER(LANG(?label) = 'en')
-                    FILTER(LANG(?abstract) = 'en')
-                }
-                GROUP BY ?label ?abstract ?birthDate ?status ?nationalities ?n1 ?n2
-
-            `;
-        query = encodeURIComponent(query);
-
-        const url = `${DBPEDIA_ENDPOINT}?query=${query}&format=json`;
-        const response = await fetch(url, {
-            headers: {
-                    'Accept': 'application/sparql-results+json'
-                }
-            });
-        
-        if (!response.ok) throw new Error('Network error');
-            
-        const data = await response.json();
-        const result = data.results.bindings[0]; 
-       
-        if (result) {
-            showDetails(result);
-        } else {
-            console.error("No details found for the astronaut.");
-        }
-    } catch (error) {
-        console.error("Error loading astronaut details:", error);
-    }
-}
-
-
-// Fonction pour afficher les détails dans le modal
-function showDetails(result) {
-    
-    const modal = document.getElementById('detailModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalContent = document.getElementById('modalContent');
-
-    const label = result.label?.value || 'No name';
-    const abstract = result.abstract?.value || 'No description available';
-    const nationality = result.nationalities?.value || 'Unknown';
-    const img = result.img?.value || 'default-astronaut.svg';
-    const birthPlace = result.birthplaces?.value || 'Unknown';
-    const birthDate = result.birthDate?.value || 'Unknown';
-    const status = result.status?.value || 'Unknown';
-    const astronautType = result.types?.value || 'Unknown';
-    const missions = result.missions?.value || 'None';
-
-    modalTitle.textContent = label;
-    modalContent.innerHTML = `
-        <div class="flex gap-4">
-            <img src="${img}" alt="${label}" class="w-32 h-32 object-cover rounded-lg">
-            <div>
-                <p><strong>Description :</strong> ${abstract}</p>
-                <p><strong>Nationality :</strong> ${nationality}</p>
-                <p><strong>Birthplace :</strong> ${birthPlace}</p>
-                <p><strong>Birthdate :</strong> ${birthDate}</p>
-                <p><strong>Status :</strong> ${status}</p>
-                <p><strong>Type :</strong> ${astronautType}</p>
-                <p><strong>Missions :</strong> ${missions}</p>
-            </div>
-        </div>
-    `;
-
-    modal.classList.add('active');
-}
-
-
-// Fonction pour fermer le modal
-function closeModal() {
-    const modal = document.getElementById('detailModal');
-    const modalContent = modal.querySelector('.modal-content');
-    
-    setTimeout(() => {
-        modal.classList.remove('active');
-    }, 300);
-}
-
-// Fermer le modal en cliquant en dehors
-document.getElementById('detailModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeModal();
-    }
-});
-
-// Fermer le modal avec la touche Echap
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeModal();
-    }
-});
 
 // Fonction pour obtenir le label du type
 function getTypeLabel(type) {

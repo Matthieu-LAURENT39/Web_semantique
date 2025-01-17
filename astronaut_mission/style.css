@@ -29,51 +29,7 @@ body {
     background-color: rgba(0, 255, 247, 0.2);
     border-radius: 3px;
 }
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 50;
-    padding: 1rem;
-    align-items: center;
-    overflow-y: auto;
-}
-.modal.active {
-    display: flex;
-}
-.modal-content {
-    opacity: 0;
-    transform: scale(0.95);
-    transition: all 0.3s ease-out;
-    max-height: calc(100vh - 4rem);
-    margin: auto;
-    display: flex;
-    flex-direction: column;
-}
-.modal.active .modal-content {
-    opacity: 1;
-    transform: scale(1);
-}
-.modal-scroll {
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 255, 247, 0.2) transparent;
-    padding-right: 6px;
-}
-.modal-scroll::-webkit-scrollbar {
-    width: 6px;
-}
-.modal-scroll::-webkit-scrollbar-track {
-    background: transparent;
-}
-.modal-scroll::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 255, 247, 0.2);
-    border-radius: 3px;
-}
+
 .info-card {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);

@@ -145,9 +145,9 @@
         function updateDisplay(data, planetName, targetPrefix) {
             if (targetPrefix === 'planet') {
                 updateMainPlanetDisplay(data, planetName);
-                document.getElementById("planet-name").textContent = planetName;
-                document.getElementById("planet-temp-title").textContent = `${planetName} Temperature`;
-                document.getElementById("planet-table-header").textContent = planetName;
+                document.getElementById("planet-name").textContent = data.label;
+                document.getElementById("planet-temp-title").textContent = `${data.label} Temperature`;
+                document.getElementById("planet-table-header").textContent = data.label;
             }
             updateTemperatureDisplay(data.temperatures, targetPrefix);
             window.PlanetData.updateComparisonTable();

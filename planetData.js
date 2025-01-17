@@ -40,13 +40,16 @@ function buildDBPediaQuery(encodedPlanetName) {
         PREFIX dbr: <http://dbpedia.org/resource/>
         PREFIX dbp: <http://dbpedia.org/property/>
         PREFIX owl: <http://www.w3.org/2002/07/owl#>
-        SELECT ?abstract ?maxTemp ?meanTemp ?minTemp ?averageSpeed ?density ?surfaceArea ?volume ?wikidataId
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        SELECT ?label ?abstract ?maxTemp ?meanTemp ?minTemp ?averageSpeed ?density ?surfaceArea ?volume ?wikidataId
                (GROUP_CONCAT(DISTINCT ?satellite; SEPARATOR="|") as ?satellites)
                (GROUP_CONCAT(DISTINCT ?parentBody; SEPARATOR="|") as ?parentBodies)
         WHERE {
-            dbr:${sparqlSafeName} dbo:abstract ?abstract ;
+            dbr:${sparqlSafeName} rdfs:label ?label ;
+                                    dbo:abstract ?abstract ;
                                     owl:sameAs ?wikidataId .
             FILTER(CONTAINS(STR(?wikidataId), "wikidata.org"))
+            FILTER(LANG(?label) = "en")
             OPTIONAL { dbr:${sparqlSafeName} dbo:maximumTemperature ?maxTemp }
             OPTIONAL { dbr:${sparqlSafeName} dbo:meanTemperature ?meanTemp }
             OPTIONAL { dbr:${sparqlSafeName} dbo:minimumTemperature ?minTemp }
@@ -64,7 +67,7 @@ function buildDBPediaQuery(encodedPlanetName) {
             OPTIONAL { dbr:${sparqlSafeName} dbp:satelliteOf ?parentBody }
             FILTER (lang(?abstract) = "en")
         } 
-        GROUP BY ?abstract ?maxTemp ?meanTemp ?minTemp ?averageSpeed ?density ?surfaceArea ?volume ?wikidataId
+        GROUP BY ?label ?abstract ?maxTemp ?meanTemp ?minTemp ?averageSpeed ?density ?surfaceArea ?volume ?wikidataId
         LIMIT 1
     `;
 }
@@ -224,6 +227,7 @@ async function fetchAndDisplayWikidataInfo(wikidataId) {
 // Data processing functions
 function processDBPediaResults(results, planetName, targetPrefix) {
     const processedData = {
+        label: results.label?.value || planetName,
         abstract: results.abstract?.value || "No description available.",
         temperatures: {
             max: results.maxTemp ? Math.round(parseFloat(results.maxTemp.value)) : null,
@@ -248,6 +252,7 @@ function processDBPediaResults(results, planetName, targetPrefix) {
     // Store data for comparison
     if (targetPrefix === 'planet') {
         window.planetData = processedData.physicalProperties;
+        window.planetLabel = processedData.label;
     } else if (targetPrefix === 'earth') {
         window.earthData = processedData.physicalProperties;
     }
@@ -389,8 +394,11 @@ function updateComparisonTable() {
     const tableBody = document.getElementById("comparison-table");
     if (!tableBody) return;
 
-    const planetName = document.getElementById("planet-table-header").textContent;
+    const planetName = window.planetLabel || document.getElementById("planet-table-header").textContent;
     const isEarth = planetName.toLowerCase() === 'earth';
+
+    // Update the table header with the proper label
+    document.getElementById("planet-table-header").textContent = planetName;
 
     tableBody.innerHTML = Object.entries(properties).map(([key, prop]) => {
         const planetValue = prop.format(window.planetData[key]);

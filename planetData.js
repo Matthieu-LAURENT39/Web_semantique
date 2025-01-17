@@ -24,7 +24,10 @@ function tempToPercent(temp) {
 }
 
 // Query builders
-function buildDBPediaQuery(encodedPlanetName) {
+function buildDBPediaQuery(planetName) {
+    // Properly encode the DBpedia resource URI
+    const encodedResource = `<http://dbpedia.org/resource/${planetName}>`;
+
     return `
         PREFIX dbo: <http://dbpedia.org/ontology/>
         PREFIX dbr: <http://dbpedia.org/resource/>
@@ -34,24 +37,25 @@ function buildDBPediaQuery(encodedPlanetName) {
                (GROUP_CONCAT(DISTINCT ?satellite; SEPARATOR="|") as ?satellites)
                (GROUP_CONCAT(DISTINCT ?parentBody; SEPARATOR="|") as ?parentBodies)
         WHERE {
-            dbr:${encodedPlanetName} dbo:abstract ?abstract ;
-                                    owl:sameAs ?wikidataId .
+            VALUES ?planet { ${encodedResource} }
+            ?planet dbo:abstract ?abstract ;
+                    owl:sameAs ?wikidataId .
             FILTER(CONTAINS(STR(?wikidataId), "wikidata.org"))
-            OPTIONAL { dbr:${encodedPlanetName} dbo:maximumTemperature ?maxTemp }
-            OPTIONAL { dbr:${encodedPlanetName} dbo:meanTemperature ?meanTemp }
-            OPTIONAL { dbr:${encodedPlanetName} dbo:minimumTemperature ?minTemp }
-            OPTIONAL { dbr:${encodedPlanetName} dbo:averageSpeed ?averageSpeed }
-            OPTIONAL { dbr:${encodedPlanetName} dbo:density ?density }
-            OPTIONAL { dbr:${encodedPlanetName} dbo:surfaceArea ?surfaceArea }
-            OPTIONAL { dbr:${encodedPlanetName} dbo:volume ?volume }
+            OPTIONAL { ?planet dbo:maximumTemperature ?maxTemp }
+            OPTIONAL { ?planet dbo:meanTemperature ?meanTemp }
+            OPTIONAL { ?planet dbo:minimumTemperature ?minTemp }
+            OPTIONAL { ?planet dbo:averageSpeed ?averageSpeed }
+            OPTIONAL { ?planet dbo:density ?density }
+            OPTIONAL { ?planet dbo:surfaceArea ?surfaceArea }
+            OPTIONAL { ?planet dbo:volume ?volume }
             OPTIONAL { 
                 {
-                    ?satellite dbp:satelliteOf dbr:${encodedPlanetName} 
+                    ?satellite dbp:satelliteOf ?planet 
                 } UNION {
-                    dbr:${encodedPlanetName} ^dbp:satelliteOf ?satellite
+                    ?planet ^dbp:satelliteOf ?satellite
                 }
             }
-            OPTIONAL { dbr:${encodedPlanetName} dbp:satelliteOf ?parentBody }
+            OPTIONAL { ?planet dbp:satelliteOf ?parentBody }
             FILTER (lang(?abstract) = "en")
         } 
         GROUP BY ?abstract ?maxTemp ?meanTemp ?minTemp ?averageSpeed ?density ?surfaceArea ?volume ?wikidataId
@@ -119,8 +123,9 @@ async function fetchWikipediaImage(planetName) {
 }
 
 async function fetchPlanetData(planetName, targetPrefix) {
-    const encodedPlanetName = planetName.replace(/ /g, '_');
-    const query = buildDBPediaQuery(encodedPlanetName);
+    console.log("Fetching data for planet:", planetName);
+    const query = buildDBPediaQuery(planetName);
+    console.log("Generated DBPedia query:", query);
 
     // Start fetching Wikipedia image in the background only for the main planet view
     if (targetPrefix === 'planet') {
@@ -129,6 +134,7 @@ async function fetchPlanetData(planetName, targetPrefix) {
 
     try {
         const data = await fetchSPARQLData(DBPEDIA_ENDPOINT, query);
+        console.log("DBPedia response:", data);
         const results = data.results.bindings[0];
 
         if (!results) {

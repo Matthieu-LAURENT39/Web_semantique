@@ -176,52 +176,65 @@
                     <div id="filterSection" class="hidden">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <div class="flex flex-col gap-2">
-                                <label class="text-gray-400 text-sm">Galaxy Type</label>
+                                <label class="text-gray-400 text-sm">Search In</label>
                                 <select 
-                                    id="typeFilter"
+                                    id="searchInFilter"
                                     class="bg-black/30 border border-gray-700 rounded-xl px-4 py-2 focus:outline-none focus:border-cyan-400 transition-colors text-white"
                                 >
-                                    <option value="">Any Type</option>
-                                    <option value="spiral">Spiral</option>
-                                    <option value="elliptical">Elliptical</option>
-                                    <option value="irregular">Irregular</option>
+                                    <option value="name">Name Only</option>
+                                    <option value="description">Description Only</option>
+                                    <option value="both">Name & Description</option>
                                 </select>
                             </div>
-                            
+
                             <div class="flex flex-col gap-2">
-                                <label class="text-gray-400 text-sm">Distance Range</label>
+                                <label class="text-gray-400 text-sm">Sort By</label>
                                 <select 
-                                    id="distanceFilter"
+                                    id="sortFilter"
                                     class="bg-black/30 border border-gray-700 rounded-xl px-4 py-2 focus:outline-none focus:border-cyan-400 transition-colors text-white"
                                 >
-                                    <option value="">Any Distance</option>
-                                    <option value="near">Near (< 1M light years)</option>
-                                    <option value="medium">Medium (1M-100M light years)</option>
-                                    <option value="far">Far (> 100M light years)</option>
+                                    <option value="name">Name</option>
+                                    <option value="distance">Distance</option>
                                 </select>
+                            </div>
+
+                            <div class="flex flex-col gap-2">
+                                <label class="text-gray-400 text-sm">Features</label>
+                                <div class="flex flex-wrap gap-2">
+                                    <label class="flex items-center gap-2 text-gray-400">
+                                        <input type="checkbox" id="hasImageFilter" class="rounded bg-black/30 border-gray-700">
+                                        Has Image
+                                    </label>
+                                    <label class="flex items-center gap-2 text-gray-400">
+                                        <input type="checkbox" id="hasDescriptionFilter" class="rounded bg-black/30 border-gray-700">
+                                        Has Description
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div id="results" class="space-y-6">
-                <!-- Results will be displayed here -->
-                <template id="galaxy-card-template">
-                    <div class="glass rounded-xl p-6 hover:bg-white/[0.15] transition-all duration-300">
-                        <div class="flex gap-6">
-                            <img class="w-32 h-32 rounded-lg object-cover" src="" alt="">
-                            <div class="flex-1">
-                                <h3 class="text-xl font-semibold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"></h3>
-                                <p class="text-gray-400 text-sm mb-4"></p>
-                                <div class="flex gap-4">
-                                    <span class="text-sm text-gray-500"></span>
-                                    <span class="text-sm text-gray-500"></span>
-                                </div>
+            <!-- Template for galaxy cards -->
+            <template id="galaxy-card-template">
+                <div class="glass rounded-xl p-6 hover:bg-white/[0.15] transition-all duration-300">
+                    <div class="flex gap-6">
+                        <img class="w-32 h-32 rounded-lg object-cover" src="" alt="">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-semibold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"></h3>
+                            <p class="text-gray-400 text-sm mb-4"></p>
+                            <div class="flex gap-4">
+                                <span class="text-sm text-gray-500"></span>
+                                <span class="text-sm text-gray-500"></span>
                             </div>
                         </div>
                     </div>
-                </template>
+                </div>
+            </template>
+
+            <div id="results" class="space-y-6">
+                <!-- Results will be displayed here -->
             </div>
 
             <div class="flex justify-center gap-4 mt-8">

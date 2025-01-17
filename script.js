@@ -271,128 +271,48 @@ function displayResults(results, searchType) {
     });
 }
 
-// Fonction pour afficher les détails dans le modal
+// Fonction pour récupérer les constellations associées à un trou noir
+async function getBlackHoleConstellations(blackHoleUri) {
+    const query = `
+        SELECT DISTINCT ?constellation ?label WHERE {
+            <${blackHoleUri}> dbp:constell ?constellation .
+            ?constellation rdfs:label ?label .
+            FILTER(LANG(?label) = 'en')
+        }
+    `;
+    
+    const url = `${DBPEDIA_ENDPOINT}?query=${encodeURIComponent(query)}&format=json`;
+    
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'Accept': 'application/sparql-results+json'
+            }
+        });
+        
+        if (!response.ok) throw new Error('Network error');
+        
+        const data = await response.json();
+        return data.results.bindings;
+    } catch (error) {
+        console.error('Error fetching constellations:', error);
+        return [];
+    }
+}
+
+// Fonction pour afficher les détails
 function showDetails(index, result, type) {
-    const modal = document.getElementById('detailModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalContent = document.getElementById('modalContent');
-    
-    const label = cleanText(result.label?.value || 'Sans nom');
-    const abstract = result.abstract?.value || 'Pas de description disponible';
-    
-    modalTitle.textContent = label;
-    
-    let content = `
-        <div id="modalImage" class="w-full flex justify-center mb-6">
-            ${result.thumbnail?.value ? 
-                `<img src="${result.thumbnail.value}" alt="${label}" 
-                     class="rounded-lg max-h-[300px] object-cover shadow-lg" />` 
-                : ''}
-        </div>
-        <div class="space-y-6">
-            <div class="info-card">
-                <p class="text-gray-300 leading-relaxed text-lg">
-                    ${abstract}
-                </p>
-            </div>
-    `;
-
-    // Section pour les informations techniques
-    let hasDetails = false;
-    let detailsContent = '';
-
-    if ((type === 'planet' || type === 'planet') && result.mass) {
-        hasDetails = true;
-        detailsContent += `
-            <div class="info-card">
-                <h3 class="text-cyan-400 font-medium text-lg mb-2">Masse</h3>
-                <p class="text-gray-300">${formatValue(result.mass.value)}</p>
-            </div>`;
-    }
-    if ((type === 'planet' || type === 'planet') && result.radius) {
-        hasDetails = true;
-        detailsContent += `
-            <div class="info-card">
-                <h3 class="text-cyan-400 font-medium text-lg mb-2">Rayon moyen</h3>
-                <p class="text-gray-300">${formatValue(result.radius.value)}</p>
-            </div>`;
-    }
-    if ((type === 'constellation' || type === 'constellation')) {
-        if (result.area) {
-            hasDetails = true;
-            detailsContent += `
-                <div class="info-card">
-                    <h3 class="text-cyan-400 font-medium text-lg mb-2">Surface</h3>
-                    <p class="text-gray-300">${result.area.value} degrés carrés</p>
-                </div>`;
+    if (type === 'blackhole') {
+        // Redirection directe vers la page de détails de la constellation
+        const constellationName = result.constell?.value || result.label?.value;
+        if (constellationName) {
+            window.location.href = `constellation-details.html?name=${encodeURIComponent(constellationName)}`;
         }
-        if (result.stars) {
-            hasDetails = true;
-            detailsContent += `
-                <div class="info-card">
-                    <h3 class="text-cyan-400 font-medium text-lg mb-2">Étoiles principales</h3>
-                    <p class="text-gray-300">${result.stars.value}</p>
-                </div>`;
-        }
+    } else {
+        const label = cleanText(result.label?.value || 'Sans nom');
+        window.location.href = `${type}-details.html?name=${encodeURIComponent(label)}`;
     }
-
-    if (hasDetails) {
-        content += `
-            <div>
-                <h3 class="text-xl font-semibold mb-4 text-cyan-400">Caractéristiques</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    ${detailsContent}
-                </div>
-            </div>
-        `;
-    }
-    
-    content += `
-            <div class="info-card mt-6">
-                <p class="text-sm text-gray-400">
-                    Source: DBpedia
-                    <br>
-                    Type: ${getTypeLabel(type)}
-                </p>
-            </div>
-        </div>
-    `;
-    
-    modalContent.innerHTML = content;
-    modal.classList.add('active');
-
-    setTimeout(() => {
-        modal.querySelector('.modal-content').style.opacity = '1';
-        modal.querySelector('.modal-content').style.transform = 'scale(1)';
-    }, 10);
 }
-
-// Fonction pour fermer le modal
-function closeModal() {
-    const modal = document.getElementById('detailModal');
-    const modalContent = modal.querySelector('.modal-content');
-    
-    modalContent.style.opacity = '0';
-    modalContent.style.transform = 'scale(0.95)';
-    
-    setTimeout(() => {
-        modal.classList.remove('active');
-    }, 300);
-}
-
-// Fermer le modal en cliquant en dehors
-document.getElementById('detailModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeModal();
-    }
-});
-
-// Fermer le modal avec la touche Echap
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeModal();
-    }
-});
 
 // Fonction pour obtenir le label du type en anglais
 function getTypeLabel(type) {

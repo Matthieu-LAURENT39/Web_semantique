@@ -6,23 +6,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planets - Astronomical Explorer</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
         body {
             font-family: 'Space Grotesk', sans-serif;
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: white;
         }
+
         .glass {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+
         .nav-link {
             transition: all 0.3s ease;
             position: relative;
         }
+
         .nav-link::after {
             content: '';
             position: absolute;
@@ -34,27 +38,34 @@
             transition: all 0.3s ease;
             transform: translateX(-50%);
         }
+
         .nav-link:hover::after {
             width: 80%;
         }
+
         .nav-link.active::after {
             width: 80%;
         }
+
         .nav-link:hover {
             background: rgba(255, 255, 255, 0.05);
         }
+
         .active {
             color: white;
         }
+
         .planet-card {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.3s ease;
         }
+
         .planet-card:hover {
             background: rgba(255, 255, 255, 0.08);
             transform: translateY(-2px);
         }
+
         .language-selector {
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -62,11 +73,13 @@
             padding: 0.5rem;
             border-radius: 0.5rem;
         }
+
         .language-selector option {
             background: #1e293b;
             color: white;
             padding: 0.5rem;
         }
+
         .temperature-bar {
             position: relative;
             width: 100%;
@@ -75,6 +88,7 @@
             border-radius: 10px;
             margin: 2rem 0;
         }
+
         .temp-marker {
             position: absolute;
             top: -5px;
@@ -84,30 +98,37 @@
             border-radius: 2px;
             transform: translateX(-50%);
         }
+
         .temp-scale {
             display: flex;
             justify-content: space-between;
             margin-top: 0.5rem;
             color: #94a3b8;
         }
+
         .comparison-table tr {
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
+
         .comparison-table td {
             padding: 1rem;
             color: #94a3b8;
         }
+
         .comparison-table td:first-child {
             font-weight: 500;
             color: white;
         }
-        select, input {
+
+        select,
+        input {
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: white;
             padding: 0.5rem;
             border-radius: 0.5rem;
         }
+
         select option {
             background: #1e293b;
             color: white;
@@ -122,7 +143,8 @@
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
-                    <a href="index.html" class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                    <a href="index.html"
+                        class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
                         Astronomical Explorer
                     </a>
                 </div>
@@ -156,38 +178,33 @@
                         class="text-gray-300 hover:text-white transition-colors">Mercury</a>
                 </li>
                 <li>
-                    <a href="?planetName=Venus"
-                        class="text-gray-300 hover:text-white transition-colors">Venus</a>
+                    <a href="?planetName=Venus" class="text-gray-300 hover:text-white transition-colors">Venus</a>
                 </li>
                 <li>
-                    <a href="?planetName=Earth"
-                        class="text-gray-300 hover:text-white transition-colors">Earth</a>
+                    <a href="?planetName=Earth" class="text-gray-300 hover:text-white transition-colors">Earth</a>
                 </li>
                 <li>
-                    <a href="?planetName=Mars"
-                        class="text-gray-300 hover:text-white transition-colors">Mars</a>
+                    <a href="?planetName=Mars" class="text-gray-300 hover:text-white transition-colors">Mars</a>
                 </li>
                 <li>
-                    <a href="?planetName=Jupiter"
-                        class="text-gray-300 hover:text-white transition-colors">Jupiter</a>
+                    <a href="?planetName=Jupiter" class="text-gray-300 hover:text-white transition-colors">Jupiter</a>
                 </li>
                 <li>
-                    <a href="?planetName=Saturn"
-                        class="text-gray-300 hover:text-white transition-colors">Saturn</a>
+                    <a href="?planetName=Saturn" class="text-gray-300 hover:text-white transition-colors">Saturn</a>
                 </li>
                 <li>
-                    <a href="?planetName=Uranus"
-                        class="text-gray-300 hover:text-white transition-colors">Uranus</a>
+                    <a href="?planetName=Uranus" class="text-gray-300 hover:text-white transition-colors">Uranus</a>
                 </li>
                 <li>
-                    <a href="?planetName=Neptune"
-                        class="text-gray-300 hover:text-white transition-colors">Neptune</a>
+                    <a href="?planetName=Neptune" class="text-gray-300 hover:text-white transition-colors">Neptune</a>
                 </li>
             </ul>
         </nav>
 
         <div class="glass rounded-xl p-6 mb-6">
-            <h1 class="text-3xl font-bold text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Planet Information</h1>
+            <h1
+                class="text-3xl font-bold text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                Planet Information</h1>
             <h2 class="text-2xl font-bold text-center mb-4 text-white" id="planet-name"></h2>
             <div id="planet-abstract-info" class="mb-4 text-gray-300"></div>
         </div>
@@ -195,19 +212,23 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <!-- Selected Planet Temperature -->
             <div class="glass rounded-xl p-6">
-                <h3 class="text-xl font-bold text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500" id="planet-temp-title"></h3>
+                <h3 class="text-xl font-bold text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"
+                    id="planet-temp-title"></h3>
                 <div id="planet-temperature-info"></div>
             </div>
 
             <!-- Earth Temperature -->
             <div class="glass rounded-xl p-6">
-                <h3 class="text-xl font-bold text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Earth Temperature</h3>
+                <h3
+                    class="text-xl font-bold text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                    Earth Temperature</h3>
                 <div id="earth-temperature-info"></div>
             </div>
         </div>
 
         <div class="glass rounded-xl p-6">
-            <h2 class="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Comparison Information</h2>
+            <h2 class="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                Comparison Information</h2>
             <div class="overflow-x-auto">
                 <table class="min-w-full table-auto">
                     <thead>
@@ -259,32 +280,32 @@
                         </div>
                     </div>
                     <div class="md:w-2/3">
-                        <p class="text-gray-700">${data.abstract}</p>
+                        <p class="text-gray-300">${data.abstract}</p>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4 mt-6">
-                    <div class="bg-blue-50 p-4 rounded-md">
-                        <h3 class="font-semibold mb-2">Satellites</h3>
+                    <div class="glass rounded-xl p-4">
+                        <h3 class="font-semibold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Satellites</h3>
                         ${data.satellites.length > 0 ?
                     `<ul class="list-disc list-inside">
                                 ${data.satellites.map(sat =>
                         `<li><a href="?planetName=${sat.replace(/ /g, '_')}" 
-                                            class="text-blue-600 hover:text-blue-800 hover:underline">${sat}</a></li>`
+                                            class="text-gray-300 hover:text-white transition-colors">${sat}</a></li>`
                     ).join('')}
                             </ul>` :
-                    '<p class="text-gray-600">No satellites found</p>'
+                    '<p class="text-gray-500 italic">No satellites found</p>'
                 }
                     </div>
-                    <div class="bg-blue-50 p-4 rounded-md">
-                        <h3 class="font-semibold mb-2">Orbits Around</h3>
+                    <div class="glass rounded-xl p-4">
+                        <h3 class="font-semibold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Orbits Around</h3>
                         ${data.parentBodies.length > 0 ?
                     `<ul class="list-disc list-inside">
                                 ${data.parentBodies.map(body =>
                         `<li><a href="?planetName=${body.replace(/ /g, '_')}" 
-                                            class="text-blue-600 hover:text-blue-800 hover:underline">${body}</a></li>`
+                                            class="text-gray-300 hover:text-white transition-colors">${body}</a></li>`
                     ).join('')}
                             </ul>` :
-                    '<p class="text-gray-600">No parent bodies found</p>'
+                    '<p class="text-gray-500 italic">No parent bodies found</p>'
                 }
                     </div>
                 </div>
@@ -304,9 +325,9 @@
 
         function updateTemperatureDisplay(temperatures, targetPrefix) {
             document.getElementById(`${targetPrefix}-temperature-info`).innerHTML = `
-                <div class="bg-blue-100 p-4 rounded-md shadow-md">
+                <div class="glass rounded-xl p-4">
                     ${(!temperatures.min && !temperatures.mean && !temperatures.max) ?
-                    `<p class="text-center text-gray-600 italic mb-4">No temperature data available</p>` :
+                    `<p class="text-center text-gray-400 italic mb-4">No temperature data available</p>` :
                     `<div class="relative w-full mt-4">
                         <div class="temperature-bar"></div>
                         ${temperatures.min !== null ?
@@ -319,21 +340,21 @@
                         <div class="temp-scale">
                             ${[0, 100, 200, 300, 400, 500].map(temp => `
                                 <div class="temp-scale-mark" style="left: ${(temp / 500) * 100}%"></div>
-                                <div class="temp-scale-label" style="left: ${(temp / 500) * 100}%">${temp}K</div>
+                                <div class="temp-scale-label text-gray-400" style="left: ${(temp / 500) * 100}%">${temp}K</div>
                             `).join('')}
                         </div>
                     </div>`
                 }
-                    <div class="mt-4">
-                        <p><strong>Min:</strong> ${temperatures.min !== null ?
+                    <div class="mt-4 text-gray-300">
+                        <p><strong class="text-white">Min:</strong> ${temperatures.min !== null ?
                     `${temperatures.min}K (${window.PlanetData.kelvinToCelsius(temperatures.min)}°C)` :
-                    '<span class="text-gray-600 italic">Data missing</span>'}</p>
-                        <p><strong>Mean:</strong> ${temperatures.mean !== null ?
+                    '<span class="text-gray-500 italic">Data missing</span>'}</p>
+                        <p><strong class="text-white">Mean:</strong> ${temperatures.mean !== null ?
                     `${temperatures.mean}K (${window.PlanetData.kelvinToCelsius(temperatures.mean)}°C)` :
-                    '<span class="text-gray-600 italic">Data missing</span>'}</p>
-                        <p><strong>Max:</strong> ${temperatures.max !== null ?
+                    '<span class="text-gray-500 italic">Data missing</span>'}</p>
+                        <p><strong class="text-white">Max:</strong> ${temperatures.max !== null ?
                     `${temperatures.max}K (${window.PlanetData.kelvinToCelsius(temperatures.max)}°C)` :
-                    '<span class="text-gray-600 italic">Data missing</span>'}</p>
+                    '<span class="text-gray-500 italic">Data missing</span>'}</p>
                     </div>
                 </div>
             `;

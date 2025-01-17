@@ -12,8 +12,14 @@ async function getConstellationData() {
             PREFIX dbp: <http://dbpedia.org/property/>
             
             SELECT DISTINCT ?constellation ?name ?abstract (SAMPLE(?img) as ?image) 
-                ?symbolism ?brightestStar ?month ?latmin ?latmax ?neareststarname
-                (GROUP_CONCAT(DISTINCT ?neighbourName; SEPARATOR=", ") as ?neighbours)
+                ?symbolism 
+                (REPLACE(STR(?brightestStar), "^.*/([^/]+)$", "$1") as ?brightestStar)
+                ?month ?latmin ?latmax ?areatotal ?arearank
+                ?numbermainstars ?numberstarsplanets ?numberbrightstars ?numbermessierobjects
+                (REPLACE(STR(?neareststarname), "^.*/([^/]+)$", "$1") as ?neareststarname)
+                (GROUP_CONCAT(DISTINCT ?borderingName; SEPARATOR=", ") as ?bordering)
+                (GROUP_CONCAT(DISTINCT ?galaxyName; SEPARATOR=", ") as ?galaxies)
+                (GROUP_CONCAT(DISTINCT ?starName; SEPARATOR=", ") as ?stars)
             WHERE {
                 ?constellation a dbo:Constellation ;
                     rdfs:label ?name ;
@@ -24,16 +30,38 @@ async function getConstellationData() {
                 OPTIONAL { ?constellation dbp:month ?month }
                 OPTIONAL { ?constellation dbp:latmin ?latmin }
                 OPTIONAL { ?constellation dbp:latmax ?latmax }
+                OPTIONAL { ?constellation dbp:areatotal ?areatotal }
+                OPTIONAL { ?constellation dbp:arearank ?arearank }
+                OPTIONAL { ?constellation dbp:numbermainstars ?numbermainstars }
+                OPTIONAL { ?constellation dbp:numberstarsplanets ?numberstarsplanets }
+                OPTIONAL { ?constellation dbp:numberbrightstars ?numberbrightstars }
+                OPTIONAL { ?constellation dbp:numbermessierobjects ?numbermessierobjects }
                 OPTIONAL { ?constellation dbp:neareststarname ?neareststarname }
                 OPTIONAL { 
-                    ?constellation dbp:bordering ?neighbour .
-                    ?neighbour rdfs:label ?neighbourName
+                    ?constellation dbp:bordering ?borderingConstellation .
+                    ?borderingConstellation rdfs:label ?borderingName .
+                    FILTER(LANG(?borderingName) = 'en')
                 }
+                OPTIONAL {
+                    ?galaxy a dbo:Galaxy ;
+                           rdfs:label ?galaxyName ;
+                           dbp:constellationName ?constellation .
+                    FILTER(LANG(?galaxyName) = 'en')
+                }
+                OPTIONAL {
+                    ?star a dbo:Star ;
+                         rdfs:label ?starName ;
+                         dbp:constell ?constellation .
+                    FILTER(LANG(?starName) = 'en')
+                }
+                FILTER (LANG(?abstract) = 'en')
+                FILTER (LANG(?name) = 'en')
                 FILTER(CONTAINS(LCASE(?name), LCASE("${decodeURIComponent(constellationName)}")))
             }
             GROUP BY ?constellation ?name ?abstract 
                 ?symbolism ?brightestStar ?month
-                ?latmin ?latmax ?neareststarname
+                ?latmin ?latmax ?areatotal ?arearank ?neareststarname
+                ?numbermainstars ?numberstarsplanets ?numberbrightstars ?numbermessierobjects
             LIMIT 1
         `;
 
@@ -79,7 +107,15 @@ async function getConstellationData() {
             latmin: result.latmin ? result.latmin.value : null,
             latmax: result.latmax ? result.latmax.value : null,
             neareststarname: result.neareststarname ? result.neareststarname.value : null,
-            neighbours: result.neighbours ? result.neighbours.value : null
+            bordering: result.bordering ? result.bordering.value : null,
+            galaxies: result.galaxies ? result.galaxies.value : null,
+            stars: result.stars ? result.stars.value : null,
+            areatotal: result.areatotal ? result.areatotal.value : null,
+            arearank: result.arearank ? result.arearank.value : null,
+            numbermainstars: result.numbermainstars ? result.numbermainstars.value : null,
+            numberstarsplanets: result.numberstarsplanets ? result.numberstarsplanets.value : null,
+            numberbrightstars: result.numberbrightstars ? result.numberbrightstars.value : null,
+            numbermessierobjects: result.numbermessierobjects ? result.numbermessierobjects.value : null
         };
     } catch (error) {
         console.error('Error fetching constellation data:', error);
@@ -100,6 +136,13 @@ function formatConstellationDetails(constellation) {
         </div>`);
     }
     
+    if (constellation.areatotal) {
+        basicInfo.push(`<div class="flex justify-between items-center">
+            <span class="text-gray-400">Total Area</span>
+            <span>${constellation.areatotal} square degrees</span>
+        </div>`);
+    }
+    
     if (basicInfo.length > 0) {
         sections.push({
             title: "Basic Information",
@@ -109,22 +152,67 @@ function formatConstellationDetails(constellation) {
 
     // Stars Information
     const starInfo = [];
-    if (constellation.brightestStar) starInfo.push(`<div class="flex justify-between items-center">
-        <span class="text-gray-400">Brightest Star</span>
-        <span>${constellation.brightestStar}</span>
-    </div>`);
+    if (constellation.brightestStar) {
+        starInfo.push(`<div class="flex justify-between items-center col-span-2 border-b border-gray-700 pb-3">
+            <span class="text-gray-400">Brightest Star</span>
+            <span>${constellation.brightestStar}</span>
+        </div>`);
+    }
     if (constellation.neareststarname) {
         const nearestStars = constellation.neareststarname.split(',').map(star => star.trim());
-        starInfo.push(`<div class="flex justify-between items-center">
+        starInfo.push(`<div class="flex justify-between items-center col-span-2 border-b border-gray-700 pb-3">
             <span class="text-gray-400">Nearest Stars</span>
             <span class="text-right">${nearestStars.join(', ')}</span>
         </div>`);
+    }
+
+    // Create arrays for left and right columns
+    const leftColumn = [];
+    const rightColumn = [];
+
+    if (constellation.numbermainstars) {
+        leftColumn.push(`<div class="flex justify-between items-center py-3">
+            <span class="text-gray-400">Main Stars</span>
+            <span>${constellation.numbermainstars}</span>
+        </div>`);
+    }
+    if (constellation.numberstarsplanets) {
+        rightColumn.push(`<div class="flex justify-between items-center py-3">
+            <span class="text-gray-400">Stars with Planets</span>
+            <span>${constellation.numberstarsplanets}</span>
+        </div>`);
+    }
+    if (constellation.numberbrightstars) {
+        leftColumn.push(`<div class="flex justify-between items-center py-3">
+            <span class="text-gray-400">Bright Stars</span>
+            <span>${constellation.numberbrightstars}</span>
+        </div>`);
+    }
+    if (constellation.numbermessierobjects) {
+        rightColumn.push(`<div class="flex justify-between items-center py-3">
+            <span class="text-gray-400">Messier Objects</span>
+            <span>${constellation.numbermessierobjects}</span>
+        </div>`);
+    }
+
+    // Add columns to starInfo if they have content
+    if (leftColumn.length > 0 || rightColumn.length > 0) {
+        starInfo.push(`
+            <div class="border-r border-gray-700 pr-4">
+                ${leftColumn.join('<div class="border-b border-gray-700"></div>')}
+            </div>
+            <div class="pl-4">
+                ${rightColumn.join('<div class="border-b border-gray-700"></div>')}
+            </div>
+        `);
     }
     
     if (starInfo.length > 0) {
         sections.push({
             title: "Stars Information",
-            content: starInfo.join('<div class="border-b border-gray-700 my-2"></div>')
+            content: `<div class="grid grid-cols-2 gap-4">
+                ${starInfo.join('')}
+            </div>`
         });
     }
 
@@ -151,10 +239,69 @@ function formatConstellationDetails(constellation) {
     }
 
     // Neighboring Constellations
-    if (constellation.neighbours) {
+    if (constellation.bordering) {
+        const borderingLinks = constellation.bordering.split(', ')
+            .map(name => `<a href="constellation-details.html?name=${encodeURIComponent(name)}" 
+                class="text-cyan-400 hover:text-cyan-300 transition-colors duration-200">${name}</a>`)
+            .join(', ');
+        
         sections.push({
-            title: "Bording Constellations",
-            content: `<p class="text-gray-300">${constellation.neighbours}</p>`
+            title: "Bordering Constellations",
+            content: `<p class="text-gray-300">${borderingLinks}</p>`
+        });
+    }
+
+    // Stars in the Constellation
+    if (constellation.stars) {
+        const starCards = constellation.stars.split(', ')
+            .map(star => `
+                <div class="bg-gradient-to-br from-blue-900/70 via-cyan-900/70 to-indigo-900/70 
+                    rounded-xl p-4 backdrop-blur-sm shadow-lg shadow-blue-900/20
+                    hover:shadow-blue-700/30 transition-all duration-300 transform hover:scale-[1.02]
+                    border border-blue-500/20">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                        </svg>
+                        <h3 class="text-lg font-medium bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">${star}</h3>
+                    </div>
+                </div>
+            `).join('');
+        
+        sections.push({
+            title: "Notable Stars",
+            content: `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    ${starCards}
+                </div>
+            `
+        });
+    }
+
+    // Galaxies in the Constellation
+    if (constellation.galaxies) {
+        const galaxyCards = constellation.galaxies.split(', ')
+            .map(galaxy => `
+                <div class="bg-gradient-to-br from-blue-900/70 via-cyan-900/70 to-indigo-900/70 
+                    rounded-xl p-4 backdrop-blur-sm shadow-lg shadow-blue-900/20
+                    hover:shadow-blue-700/30 transition-all duration-300 transform hover:scale-[1.02]
+                    border border-blue-500/20">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        <h3 class="text-lg font-medium bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">${galaxy}</h3>
+                    </div>
+                </div>
+            `).join('');
+        
+        sections.push({
+            title: "Notable Galaxies",
+            content: `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    ${galaxyCards}
+                </div>
+            `
         });
     }
 
@@ -170,19 +317,14 @@ function formatConstellationBadges(constellation) {
             ${constellation.zodiacSignName}
         </div>`);
     }
-    if (constellation.stars) {
-        badges.push(`<div class="px-4 py-2 rounded-xl bg-blue-500/20 text-blue-400 font-medium">
-            ${constellation.stars} étoiles
-        </div>`);
-    }
-    if (constellation.numberOfPlanets) {
-        badges.push(`<div class="px-4 py-2 rounded-xl bg-purple-500/20 text-purple-400 font-medium">
-            ${constellation.numberOfPlanets} planètes
-        </div>`);
-    }
     if (constellation.month) {
         badges.push(`<div class="px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-400 font-medium">
             ${constellation.month}
+        </div>`);
+    }
+    if (constellation.arearank) {
+        badges.push(`<div class="px-4 py-2 rounded-xl bg-purple-500/20 text-purple-400 font-medium">
+            Rank #${constellation.arearank}
         </div>`);
     }
     

@@ -115,7 +115,7 @@ function showDetailsMission(result) {
             const astronautName = astronautUri.split("/").pop().replace(/_/g, " ");
             const listItem = document.createElement("li");
             const link = document.createElement("a");
-            link.href = `/astronaut_mission/astronaut_detail.html?uri=${encodeURIComponent(astronautUri)}`;
+            link.href = `/astronaut_mission/astronaut_detail.html?uri=${encodeURIComponent(astronautUri.trim())}`;
             link.textContent = astronautName;
             link.classList.add("text-cyan-400", "hover:underline");
             listItem.appendChild(link);
@@ -129,7 +129,7 @@ function showDetailsMission(result) {
     if (previousMission !== 'Unknown') {
         const previousMissionName = previousMission.split("/").pop().replace(/_/g, " ");
         const previousMissionLink = document.createElement("a");
-        previousMissionLink.href = `/astronaut_mission/mission_detail.html?uri=${encodeURIComponent(previousMission)}`;
+        previousMissionLink.href = `/astronaut_mission/mission_detail.html?uri=${encodeURIComponent(previousMission.trim())}`;
         previousMissionLink.textContent = previousMissionName;
         previousMissionLink.classList.add("text-cyan-400", "hover:underline");
         const previousMissionContainer = document.getElementById("mission-previousMission");
@@ -142,7 +142,7 @@ function showDetailsMission(result) {
     if (nextMission !== 'Unknown') {
         const nextMissionName = nextMission.split("/").pop().replace(/_/g, " ");
         const nextMissionLink = document.createElement("a");
-        nextMissionLink.href = `/astronaut_mission/mission_detail.html?uri=${encodeURIComponent(nextMission)}`;
+        nextMissionLink.href = `/astronaut_mission/mission_detail.html?uri=${encodeURIComponent(nextMission.trim())}`;
         nextMissionLink.textContent = nextMissionName;
         nextMissionLink.classList.add("text-cyan-400", "hover:underline");
         const nextMissionContainer = document.getElementById("mission-nextMission");

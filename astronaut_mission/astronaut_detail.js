@@ -79,14 +79,30 @@ function showDetailsAstronaut(result) {
     document.getElementById("astronaut-img").alt = label;
     document.getElementById("astronaut-label").textContent = label;
 
+    
     // Mise à jour des détails
     document.getElementById("astronaut-description").textContent = abstract;
-    document.getElementById("astronaut-nationality").textContent = nationality;
+    document.getElementById("astronaut-nationality").textContent = nationality.split("/").pop().replace(/_/g, " ");
     document.getElementById("astronaut-birthplace").textContent = birthPlace;
-    document.getElementById("astronaut-birthdate").textContent = birthDate;
+    document.getElementById("astronaut-birthdate").textContent = birthDate
     document.getElementById("astronaut-status").textContent = status;
     document.getElementById("astronaut-type").textContent = astronautType;
-    // document.getElementById("astronaut-missions").textContent = missions;
+    
+
+    const birthplaceElement = document.getElementById("astronaut-birthplace");
+    if (birthPlace !== 'Unknown') {
+        const birthPlaceList = birthPlace.split(",");
+        birthplaceElement.innerHTML = ""; // Réinitialiser le contenu
+        birthPlaceList.forEach((placeUri) => {
+            const placeName = placeUri.split("/").pop().replace(/_/g, " ");
+            const listItem = document.createElement("li");
+            listItem.textContent = placeName;
+            birthplaceElement.appendChild(listItem);
+        });
+    } else {
+        birthplaceElement.textContent = birthPlace; // Afficher "Unknown" si aucune donnée
+    }
+
 
     const missionsListElement = document.getElementById("astronaut-missions");
     missionsListElement.innerHTML = ""; // Réinitialiser la liste des missions
@@ -96,7 +112,7 @@ function showDetailsAstronaut(result) {
             const missionName = missionUri.split("/").pop().replace(/_/g, " ");
             const listItem = document.createElement("li");
             const link = document.createElement("a");
-            link.href = `/astronaut_mission/mission_detail.html?uri=${encodeURIComponent(missionUri)}`;
+            link.href = `/astronaut_mission/mission_detail.html?uri=${encodeURIComponent(missionUri.trim())}`;
             link.textContent = missionName;
             link.classList.add("text-cyan-400", "hover:underline");
             listItem.appendChild(link);

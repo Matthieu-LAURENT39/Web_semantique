@@ -83,8 +83,8 @@ function buildQuery(searchTerm, searchType) {
                     OPTIONAL { ?entity dbp:stars ?stars }
                     OPTIONAL { ?entity dbo:thumbnail ?img }
                 }
-                FILTER(LANG(?label) = 'fr')
-                FILTER(LANG(?abstract) = 'fr')
+                FILTER(LANG(?label) = 'en')
+                FILTER(LANG(?abstract) = 'en')
                 FILTER(${createFlexibleFilter('?label')})
             }
             GROUP BY ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars
@@ -108,8 +108,8 @@ function buildQuery(searchTerm, searchType) {
                                 ?entity dbp:image ?img
                             }
                         }
-                        FILTER(LANG(?label) = 'fr')
-                        FILTER(LANG(?abstract) = 'fr')
+                        FILTER(LANG(?label) = 'en')
+                        FILTER(LANG(?abstract) = 'en')
                         FILTER(${createFlexibleFilter('?label')})
                     }
                     GROUP BY ?entity ?label ?abstract ?mass ?radius
@@ -123,8 +123,8 @@ function buildQuery(searchTerm, searchType) {
                                rdfs:label ?label ;
                                dbo:abstract ?abstract .
                         OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
-                        FILTER(LANG(?label) = 'fr')
-                        FILTER(LANG(?abstract) = 'fr')
+                        FILTER(LANG(?label) = 'en')
+                        FILTER(LANG(?abstract) = 'en')
                         FILTER(${createFlexibleFilter('?label')})
                     }
                     LIMIT 15
@@ -139,8 +139,8 @@ function buildQuery(searchTerm, searchType) {
                         OPTIONAL { ?entity dbo:area ?area }
                         OPTIONAL { ?entity dbp:stars ?stars }
                         OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
-                        FILTER(LANG(?label) = 'fr')
-                        FILTER(LANG(?abstract) = 'fr')
+                        FILTER(LANG(?label) = 'en')
+                        FILTER(LANG(?abstract) = 'en')
                         FILTER(${createFlexibleFilter('?label')})
                     }
                     ORDER BY ASC(STRLEN(?label))
@@ -148,7 +148,6 @@ function buildQuery(searchTerm, searchType) {
                 `;
                 break;
         }
-
     }
     
     return encodeURIComponent(query);
@@ -225,22 +224,50 @@ function displayResults(results, searchType) {
     if (!results || results.length === 0) {
         resultsDiv.innerHTML = `
             <div class="glass rounded-xl p-6 text-center">
-                <p class="text-gray-400">Aucun résultat trouvé</p>
+                <p class="text-gray-400">No results found</p>
             </div>`;
         return;
     }
     
     resultsDiv.innerHTML = '';
     results.forEach(result => {
-        const constellation = {
-            name: result.label?.value || 'Sans nom',
-            abstract: result.abstract?.value || 'Pas de description disponible',
-            image: result.image?.value || null,
-            stars: result.stars?.value || null,
-            area: result.area?.value || null
-        };
+        const card = document.createElement('div');
+        card.className = 'glass rounded-xl p-6 hover:bg-white/5 transition-all duration-300';
         
-        resultsDiv.appendChild(createConstellationCard(constellation));
+        const type = result.type?.value || searchType;
+        const name = result.label?.value || 'Unnamed';
+        const abstract = result.abstract?.value || 'No description available';
+        const image = result.thumbnail?.value || null;
+        
+        let link = '#';
+        if (type === 'planet') {
+            const planetName = name.split(' ')[0]; // On prend le premier mot du nom (ex: "Mars" dans "Mars (planet)")
+            link = `planet.html?planetName=${planetName}`;
+        }
+        
+        card.innerHTML = `
+            <div class="flex flex-col md:flex-row gap-6">
+                ${image ? `
+                    <div class="md:w-1/3 flex-shrink-0">
+                        <img src="${image}" alt="${name}" class="w-full h-48 object-cover rounded-lg">
+                    </div>
+                ` : ''}
+                <div class="flex-1">
+                    <div class="flex items-center gap-4 mb-4">
+                        <h3 class="text-xl font-bold">${name}</h3>
+                        <span class="result-type px-2 py-1 rounded-full text-xs font-medium">${type}</span>
+                    </div>
+                    <p class="text-gray-300 mb-4">${abstract.substring(0, 200)}...</p>
+                    ${type === 'planet' ? `
+                        <a href="${link}" class="inline-block bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
+                            View details
+                        </a>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        
+        resultsDiv.appendChild(card);
     });
 }
 
@@ -367,11 +394,11 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Fonction pour obtenir le label du type en français
+// Fonction pour obtenir le label du type en anglais
 function getTypeLabel(type) {
     const types = {
-        'planet': 'Planète',
-        'galaxy': 'Galaxie',
+        'planet': 'Planet',
+        'galaxy': 'Galaxy',
         'constellation': 'Constellation'
     };
     return types[type] || type;
@@ -386,7 +413,7 @@ document.getElementById('searchInput').addEventListener('keypress', function(e) 
 
 // Fonction pour formater les valeurs numériques
 function formatValue(value) {
-    if (!value) return 'Non disponible';
+    if (!value) return 'Not available';
     
     // Si c'est un nombre scientifique
     if (value.includes('E')) {
@@ -417,12 +444,12 @@ function createConstellationCard(constellation) {
             <div class="flex flex-wrap gap-2 mb-4">
                 ${constellation.stars ? `
                     <div class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm">
-                        ${constellation.stars} étoiles
+                        ${constellation.stars} stars
                     </div>
                 ` : ''}
                 ${constellation.area ? `
                     <div class="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-sm">
-                        ${parseFloat(constellation.area).toFixed(2)} deg²
+                        ${parseFloat(constellation.area).toFixed(2)} sq deg
                     </div>
                 ` : ''}
             </div>

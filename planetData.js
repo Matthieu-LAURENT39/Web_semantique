@@ -198,7 +198,12 @@ function processDBPediaResults(results, planetName, targetPrefix) {
             volume: results.volume ? parseFloat(results.volume.value) : null
         },
         satellites: processSatellites(results.satellites?.value),
-        parentBodies: processSatellites(results.parentBodies?.value)
+        parentBodies: processSatellites(results.parentBodies?.value),
+        externalLinks: {
+            dbpedia: `http://dbpedia.org/resource/${planetName}`,
+            wikidata: results.wikidataId?.value,
+            wikipedia: `https://en.wikipedia.org/wiki/${planetName}`
+        }
     };
 
     // Store data for comparison

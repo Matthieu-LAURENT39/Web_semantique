@@ -281,6 +281,32 @@
                     </div>
                     <div class="md:w-2/3">
                         <p class="text-gray-300">${data.abstract}</p>
+                        <div class="mt-4 flex gap-4">
+                            <a href="${data.externalLinks.dbpedia}" target="_blank" rel="noopener noreferrer" 
+                               class="glass px-4 py-2 rounded-lg text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                </svg>
+                                View on DBpedia
+                            </a>
+                            <a href="${data.externalLinks.wikidata}" target="_blank" rel="noopener noreferrer" 
+                               class="glass px-4 py-2 rounded-lg text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                </svg>
+                                View on Wikidata
+                            </a>
+                            <a href="${data.externalLinks.wikipedia}" target="_blank" rel="noopener noreferrer" 
+                               class="glass px-4 py-2 rounded-lg text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                </svg>
+                                View on Wikipedia
+                            </a>
+                        </div>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4 mt-6">
@@ -290,7 +316,7 @@
                     `<ul class="list-disc list-inside">
                                 ${data.satellites.map(sat =>
                         `<li><a href="?planetName=${sat.replace(/ /g, '_')}" 
-                                            class="text-gray-300 hover:text-white transition-colors">${sat}</a></li>`
+                                                class="text-gray-300 hover:text-white transition-colors">${sat}</a></li>`
                     ).join('')}
                             </ul>` :
                     '<p class="text-gray-500 italic">No satellites found</p>'
@@ -302,7 +328,7 @@
                     `<ul class="list-disc list-inside">
                                 ${data.parentBodies.map(body =>
                         `<li><a href="?planetName=${body.replace(/ /g, '_')}" 
-                                            class="text-gray-300 hover:text-white transition-colors">${body}</a></li>`
+                                                class="text-gray-300 hover:text-white transition-colors">${body}</a></li>`
                     ).join('')}
                             </ul>` :
                     '<p class="text-gray-500 italic">No parent bodies found</p>'

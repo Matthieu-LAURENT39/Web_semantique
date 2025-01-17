@@ -149,15 +149,20 @@
                 return null;
             })();
 
+            // As cool as it would be, we can't get the atmosphere composition from DBpedia.
+            // It's available, but we don't know which element is which, and the order is not consistent.
             const query = `
                 PREFIX dbo: <http://dbpedia.org/ontology/>
                 PREFIX dbr: <http://dbpedia.org/resource/>
                 PREFIX dbp: <http://dbpedia.org/property/>
-                SELECT ?abstract ?maxTemp ?meanTemp ?minTemp ?averageSpeed ?density ?surfaceArea ?volume
+                PREFIX owl: <http://www.w3.org/2002/07/owl#>
+                SELECT ?abstract ?maxTemp ?meanTemp ?minTemp ?averageSpeed ?density ?surfaceArea ?volume ?wikidataId
                        (GROUP_CONCAT(DISTINCT ?satellite; SEPARATOR="|") as ?satellites)
                        (GROUP_CONCAT(DISTINCT ?parentBody; SEPARATOR="|") as ?parentBodies)
                 WHERE {
-                    dbr:${encodedPlanetName} dbo:abstract ?abstract .
+                    dbr:${encodedPlanetName} dbo:abstract ?abstract ;
+                                            owl:sameAs ?wikidataId .
+                    FILTER(CONTAINS(STR(?wikidataId), "wikidata.org"))
                     OPTIONAL { dbr:${encodedPlanetName} dbo:maximumTemperature ?maxTemp }
                     OPTIONAL { dbr:${encodedPlanetName} dbo:meanTemperature ?meanTemp }
                     OPTIONAL { dbr:${encodedPlanetName} dbo:minimumTemperature ?minTemp }
@@ -175,7 +180,7 @@
                     OPTIONAL { dbr:${encodedPlanetName} dbp:satelliteOf ?parentBody }
                     FILTER (lang(?abstract) = "en")
                 } 
-                GROUP BY ?abstract ?maxTemp ?meanTemp ?minTemp ?averageSpeed ?density ?surfaceArea ?volume
+                GROUP BY ?abstract ?maxTemp ?meanTemp ?minTemp ?averageSpeed ?density ?surfaceArea ?volume ?wikidataId
                 LIMIT 1
             `;
             const url = `${endpoint}?query=${encodeURIComponent(query)}&format=json`;
@@ -190,6 +195,183 @@
                         document.getElementById("planet-abstract-info").innerHTML = "<p class='text-red-500 text-center'>No information found.</p>";
                     }
                     return;
+                }
+
+                // Extract Wikidata ID
+                const wikidataId = results.wikidataId?.value.split('/').pop();
+                console.log("Extracted Wikidata ID:", wikidataId);
+
+                // If we have a Wikidata ID and this is the main planet view, fetch additional data
+                if (wikidataId && targetPrefix === 'planet') {
+                    // First query for labels
+                    const labelsQuery = `
+                        SELECT ?label ?langCode WHERE {
+                            VALUES ?entity { wd:${wikidataId} }
+                            VALUES ?langCode { "en" "fr" "es" "de" "ru" "ja" }
+                            ?entity rdfs:label ?label .
+                            FILTER(LANG(?label) = ?langCode)
+                        }
+                        ORDER BY ?langCode
+                    `;
+
+                    // Second query for atmosphere
+                    const atmosphereQuery = `
+                        SELECT ?atmosphere ?atmosphereLabel ?material ?materialLabel ?proportion WHERE {
+                            # Find atmosphere that is part of this planet
+                            ?atmosphere p:P31 ?statement0;
+                                       p:P361 ?statement1.
+                            ?statement0 (ps:P31/(wdt:P279*)) wd:Q19704068.  # Instance of atmosphere of a planet
+                            ?statement1 (ps:P361/(wdt:P279*)) wd:${wikidataId}.  # Part of the planet
+                            
+                            # Get composition using made from material property
+                            OPTIONAL {
+                                ?atmosphere p:P186 ?materialStatement.  # P186 is "made from material"
+                                ?materialStatement ps:P186 ?material;
+                                                 pq:P1107 ?proportion.  # P1107 is "proportion" (value between 0 and 1)
+                            }
+                            
+                            SERVICE wikibase:label { 
+                                bd:serviceParam wikibase:language "en".
+                                ?atmosphere rdfs:label ?atmosphereLabel.
+                                ?material rdfs:label ?materialLabel.
+                            }
+                        }
+                        ORDER BY DESC(?proportion)
+                    `;
+                    console.log("Atmosphere Query:", atmosphereQuery);
+
+                    try {
+                        // Fetch labels
+                        const labelsResponse = await fetch(`https://query.wikidata.org/sparql?query=${encodeURIComponent(labelsQuery)}&format=json`, {
+                            headers: {
+                                'Accept': 'application/sparql-results+json',
+                                'User-Agent': 'PlanetInfoViewer/1.0'
+                            }
+                        });
+                        const labelsData = await labelsResponse.json();
+                        const labels = labelsData.results.bindings;
+
+                        // Fetch atmosphere data
+                        console.log("Fetching atmosphere data for Wikidata ID:", wikidataId);
+                        const atmosphereUrl = `https://query.wikidata.org/sparql?query=${encodeURIComponent(atmosphereQuery)}&format=json`;
+                        console.log("Atmosphere URL:", atmosphereUrl);
+
+                        const atmosphereResponse = await fetch(atmosphereUrl, {
+                            headers: {
+                                'Accept': 'application/sparql-results+json',
+                                'User-Agent': 'PlanetInfoViewer/1.0'
+                            }
+                        });
+                        console.log("Atmosphere Response Status:", atmosphereResponse.status);
+
+                        const atmosphereData = await atmosphereResponse.json();
+                        console.log("Raw Atmosphere Data:", atmosphereData);
+
+                        const atmosphereResults = atmosphereData.results.bindings;
+                        console.log("Processed Atmosphere Results:", atmosphereResults);
+                        console.log("Number of atmosphere components:", atmosphereResults.length);
+
+                        if (atmosphereResults.length > 0) {
+                            console.log("First atmosphere result:", atmosphereResults[0]);
+                            const componentsWithProportion = atmosphereResults.filter(r => r.proportion);
+                            console.log("Components with proportion:", componentsWithProportion.length);
+                            console.log("Components with proportion and label:",
+                                componentsWithProportion.filter(r => r.materialLabel).length);
+                        }
+
+                        // Process and display labels
+                        if (labels.length > 0) {
+                            const languageInfo = {
+                                'en': { name: 'English', emoji: '🇬🇧' },
+                                'fr': { name: 'Français', emoji: '🇫🇷' },
+                                'es': { name: 'Español', emoji: '🇪🇸' },
+                                'de': { name: 'Deutsch', emoji: '🇩🇪' },
+                                'ru': { name: 'Русский', emoji: '🇷🇺' },
+                                'ja': { name: '日本語', emoji: '🇯🇵' }
+                            };
+
+                            const labelMap = labels.reduce((acc, curr) => {
+                                acc[curr.langCode.value] = curr.label.value;
+                                return acc;
+                            }, {});
+
+                            // Add language labels section
+                            const nameDiv = document.getElementById("planet-name");
+                            if (nameDiv) {
+                                const languageSection = `
+                                    <div class="flex flex-wrap justify-center gap-6 text-lg mt-4">
+                                        ${Object.entries(labelMap).map(([lang, name]) => `
+                                            <div class="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-lg shadow-sm">
+                                                <span class="text-2xl" role="img" aria-label="${languageInfo[lang].name} flag">${languageInfo[lang].emoji}</span>
+                                                <div class="flex flex-col">
+                                                    <span class="text-gray-500 text-sm font-medium">${languageInfo[lang].name}</span>
+                                                    <span class="font-medium">${name}</span>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                `;
+                                nameDiv.insertAdjacentHTML('afterend', languageSection);
+                            }
+                        }
+
+                        // Process and display atmosphere data
+                        if (atmosphereResults.length > 0) {
+                            const atmosphereSection = document.createElement('div');
+                            atmosphereSection.className = 'bg-white p-6 shadow-md rounded-md mb-4';
+                            atmosphereSection.innerHTML = `
+                                <h2 class="text-lg font-semibold mb-4">Atmosphere Composition</h2>
+                                <div class="space-y-4">
+                                    ${atmosphereResults.some(r => r.proportion) ? `
+                                        <div class="relative h-8 bg-gray-200 rounded-lg overflow-hidden">
+                                            ${atmosphereResults
+                                        .filter(r => r.proportion)
+                                        .map((r, index) => {
+                                            const percentage = parseFloat(r.proportion.value) * 100; // Convert proportion to percentage
+                                            const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500', 'bg-indigo-500'];
+                                            return `
+                                                        <div class="${colors[index % colors.length]} h-full absolute"
+                                                             style="left: ${index === 0 ? '0' : atmosphereResults
+                                                    .filter(r => r.proportion)
+                                                    .slice(0, index)
+                                                    .reduce((acc, r) => acc + parseFloat(r.proportion.value) * 100, 0)}%;
+                                                                    width: ${percentage}%">
+                                                        </div>
+                                                    `;
+                                        }).join('')}
+                                        </div>
+                                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                            ${atmosphereResults
+                                        .filter(r => r.proportion && r.materialLabel)
+                                        .map((r, index) => {
+                                            const colors = ['text-blue-500', 'text-green-500', 'text-yellow-500', 'text-red-500', 'text-purple-500', 'text-indigo-500'];
+                                            return `
+                                                        <div class="flex items-center gap-2">
+                                                            <div class="w-3 h-3 rounded-full ${colors[index % colors.length].replace('text-', 'bg-')}"></div>
+                                                            <div>
+                                                                <div class="font-medium">${r.materialLabel.value}</div>
+                                                                <div class="text-sm text-gray-600">${(parseFloat(r.proportion.value) * 100).toFixed(2)}%</div>
+                                                            </div>
+                                                        </div>
+                                                    `;
+                                        }).join('')}
+                                        </div>
+                                    ` : `
+                                        <p class="text-gray-600 italic">No detailed composition data available</p>
+                                    `}
+                                </div>
+                            `;
+
+                            // Insert the atmosphere section before the temperature comparison section
+                            const temperatureSection = document.querySelector('.grid.grid-cols-2.gap-4.mb-4');
+                            if (temperatureSection) {
+                                temperatureSection.parentNode.insertBefore(atmosphereSection, temperatureSection);
+                            }
+                        }
+
+                    } catch (error) {
+                        console.error("Error fetching Wikidata data:", error);
+                    }
                 }
 
                 console.log("Results for " + planetName + ":", results);
@@ -277,7 +459,7 @@
                 function tempToPercent(temp) {
                     if (temp === null) return null;
                     // Scale from 0K to 500K for a better visualization
-                    const minTemp = 0;  // 0 Kelvin
+                    const minTemp = 0;   // 0 Kelvin
                     const maxTemp = 500; // 500 Kelvin
                     return Math.max(0, Math.min(100, ((temp - minTemp) / (maxTemp - minTemp)) * 100));
                 }

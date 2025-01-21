@@ -408,13 +408,8 @@ function generateAtmosphereBarSegments(results) {
 }
 
 function generateAtmosphereLegend(results) {
-    const uniqueResults = Array.from(new Map(
-        results
-            .filter(r => r.proportion && r.materialLabel)
-            .map(r => [r.materialLabel.value, r])
-    ).values());
-
-    return uniqueResults
+    return results
+        .filter(r => r.proportion && r.materialLabel)
         .map((r, index) => {
             const colors = ['text-blue-500', 'text-emerald-500', 'text-amber-500', 'text-rose-500', 'text-purple-500', 'text-indigo-500'];
             return `

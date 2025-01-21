@@ -226,10 +226,6 @@ async function executeRequest(request, callback) {
 
 function search() {
     const searchQuery = document.getElementById("searchInput").value;
-    const searchInFilter = document.getElementById("searchInFilter").value;
-    const sortFilter = document.getElementById("sortFilter").value;
-    const hasImage = document.getElementById("hasImageFilter").checked;
-    const hasDescription = document.getElementById("hasDescriptionFilter").checked;
     
     // Reset to first page when searching
     currentPage = 0;
@@ -251,14 +247,10 @@ function search() {
         FILTER(lang(?name) = 'en')
         FILTER(lang(?description) = 'en' || !bound(?description))
         
-        # Search filters
-        ${searchQuery ? getSearchFilter(searchQuery, searchInFilter) : ''}
-        
-        # Feature filters
-        ${hasImage ? 'FILTER(bound(?imgUrl))' : ''}
-        ${hasDescription ? 'FILTER(bound(?description))' : ''}
+        # Search filter
+        ${searchQuery ? `FILTER(regex(?name, "${searchQuery}", "i"))` : ''}
     }
-    ${getSortClause(sortFilter)}
+    ORDER BY ?name
     LIMIT ${itemsPerPage}
     OFFSET ${currentPage * itemsPerPage}
     `;
@@ -345,6 +337,13 @@ function displayResults(data) {
     data.results.bindings.forEach(element => {
         try {
             const clone = template.content.cloneNode(true);
+            clone.querySelector(".galaxy-card").onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const name = encodeURIComponent(element.name.value);
+                const detailsUrl = `galaxy-details.html?galaxyName=${name}`;
+                window.location.href = detailsUrl;
+            }
             
             // Set image with error handling
             const img = clone.querySelector("img");

@@ -6,13 +6,17 @@ function getQueryParam(param) {
     return urlParams.get(param);
 }
 
-
 // Fonction pour fetch les détails d'un astronaute en particulier 
 async function loadAstronautDetails() {
-    astronautURI = getQueryParam("uri")
+    const astronautName = getQueryParam("name");
+    if (!astronautName) {
+        showNoDetailsFound();
+        return;
+    }
+
     try {
         let query = `
-            SELECT DISTINCT ?label ?abstract ?birthDate 
+            SELECT DISTINCT ?entity ?label ?abstract ?birthDate 
                 SAMPLE(?thumbnail) as ?img
                 (GROUP_CONCAT(DISTINCT ?one_status; separator=", ") AS ?status)
                 (GROUP_CONCAT(DISTINCT ?mission; separator=", ") AS ?missions)
@@ -22,30 +26,32 @@ async function loadAstronautDetails() {
                 (GROUP_CONCAT(DISTINCT ?nationality; separator=", ") AS ?nationalities)
                                 
                 WHERE {
-                    <${astronautURI}> rdfs:label ?label ;
-                                                                foaf:depiction ?thumbnail ;
-                                                                dbo:abstract ?abstract.
-                    OPTIONAL { <${astronautURI}> dbo:birthPlace ?birthplace.}
-                    OPTIONAL { <${astronautURI}> dbo:birthDate ?birthDate. }
-                    OPTIONAL { <${astronautURI}> dbp:status ?one_status. }
-                    OPTIONAL { <${astronautURI}> dbp:type ?type. }
-                    OPTIONAL { <${astronautURI}> dbo:mission ?mission. }
-                    OPTIONAL { <${astronautURI}> dbo:nationality ?n1. }
-                    OPTIONAL { <${astronautURI}> dbp:nationality ?n2. }
+                    ?entity dbp:occupation dbr:Astronaut;
+                            rdf:type dbo:Person;
+                            rdfs:label ?label.
+                    FILTER(REPLACE(str(?label), "_", " ") = "${astronautName}")
                     FILTER(LANG(?label) = 'en')
-                    FILTER(LANG(?abstract) = 'en')
+                    
+                    OPTIONAL { ?entity foaf:depiction ?thumbnail }
+                    OPTIONAL { ?entity dbo:abstract ?abstract . FILTER(LANG(?abstract) = 'en') }
+                    OPTIONAL { ?entity dbo:birthPlace ?birthplace }
+                    OPTIONAL { ?entity dbo:birthDate ?birthDate }
+                    OPTIONAL { ?entity dbp:status ?one_status }
+                    OPTIONAL { ?entity dbp:type ?type }
+                    OPTIONAL { ?entity dbo:mission ?mission }
+                    OPTIONAL { ?entity dbo:nationality ?n1 }
+                    OPTIONAL { ?entity dbp:nationality ?n2 }
                 }
-                GROUP BY ?label ?abstract ?birthDate ?status ?nationalities ?n1 ?n2
-
+                GROUP BY ?entity ?label ?abstract ?birthDate ?status ?nationalities ?n1 ?n2
             `;
         query = encodeURIComponent(query);
 
         const url = `${DBPEDIA_ENDPOINT}?query=${query}&format=json`;
         const response = await fetch(url, {
             headers: {
-                    'Accept': 'application/sparql-results+json'
-                }
-            });
+                'Accept': 'application/sparql-results+json'
+            }
+        });
         
         if (!response.ok) throw new Error('Network error');
             
@@ -60,6 +66,7 @@ async function loadAstronautDetails() {
         }
     } catch (error) {
         console.error("Error loading astronaut details:", error);
+        showNoDetailsFound();
     }
 }
 

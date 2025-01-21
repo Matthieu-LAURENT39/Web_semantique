@@ -166,60 +166,6 @@
                             Search
                         </button>
                     </div>
-                    
-                    <!-- Advanced Filters -->
-                    <div class="flex items-center gap-2">
-                        <button 
-                            onclick="toggleFilters()"
-                            class="text-gray-400 hover:text-white flex items-center gap-2 text-sm"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                            Advanced Filters
-                        </button>
-                    </div>
-                    
-                    <div id="filterSection" class="hidden">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            <div class="flex flex-col gap-2">
-                                <label class="text-gray-400 text-sm">Search In</label>
-                                <select 
-                                    id="searchInFilter"
-                                    class="bg-black/30 border border-gray-700 rounded-xl px-4 py-2 focus:outline-none focus:border-cyan-400 transition-colors text-white"
-                                >
-                                    <option value="name">Name Only</option>
-                                    <option value="description">Description Only</option>
-                                    <option value="both">Name & Description</option>
-                                </select>
-                            </div>
-
-                            <div class="flex flex-col gap-2">
-                                <label class="text-gray-400 text-sm">Sort By</label>
-                                <select 
-                                    id="sortFilter"
-                                    class="bg-black/30 border border-gray-700 rounded-xl px-4 py-2 focus:outline-none focus:border-cyan-400 transition-colors text-white"
-                                >
-                                    <option value="name">Name</option>
-                                    <option value="distance">Distance</option>
-                                </select>
-                            </div>
-
-                            <div class="flex flex-col gap-2">
-                                <label class="text-gray-400 text-sm">Features</label>
-                                <div class="flex flex-wrap gap-2">
-                                    <label class="flex items-center gap-2 text-gray-400">
-                                        <input type="checkbox" id="hasImageFilter" class="rounded bg-black/30 border-gray-700">
-                                        Has Image
-                                    </label>
-                                    <label class="flex items-center gap-2 text-gray-400">
-                                        <input type="checkbox" id="hasDescriptionFilter" class="rounded bg-black/30 border-gray-700">
-                                        Has Description
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 

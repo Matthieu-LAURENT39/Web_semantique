@@ -85,7 +85,7 @@ function buildWikidataLabelsQuery(wikidataId) {
 
 function buildAtmosphereQuery(wikidataId) {
     return `
-        SELECT ?atmosphere ?atmosphereLabel ?material ?materialLabel ?proportion 
+        SELECT DISTINCT ?atmosphere ?atmosphereLabel ?material ?materialLabel ?proportion 
                ?radius ?radiusUnit ?radiusUnitLabel ?appliesTo ?appliesToLabel
         WHERE {
             OPTIONAL {
@@ -123,6 +123,8 @@ function buildAtmosphereQuery(wikidataId) {
                 ?appliesTo rdfs:label ?appliesToLabel.
             }
         }
+        GROUP BY ?atmosphere ?atmosphereLabel ?material ?materialLabel ?proportion 
+                 ?radius ?radiusUnit ?radiusUnitLabel ?appliesTo ?appliesToLabel
         ORDER BY DESC(?proportion)
     `;
 }
@@ -389,13 +391,27 @@ function generateAtmosphereHTML(atmosphereResults) {
 }
 
 function generateAtmosphereBarSegments(results) {
+    // Create a Set to track unique materials
+    const seen = new Set();
+
     return results
         .filter(r => r.proportion)
+        .filter(r => {
+            // Only keep the first occurrence of each material
+            const material = r.materialLabel?.value;
+            if (!material || seen.has(material)) return false;
+            seen.add(material);
+            return true;
+        })
         .map((r, index) => {
             const percentage = parseFloat(r.proportion.value) * 100;
             const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-purple-500', 'bg-indigo-500'];
             const left = index === 0 ? 0 : results
                 .filter(r => r.proportion)
+                .filter(r => {
+                    const material = r.materialLabel?.value;
+                    return material && !seen.has(material);
+                })
                 .slice(0, index)
                 .reduce((acc, r) => acc + parseFloat(r.proportion.value) * 100, 0);
 
@@ -408,8 +424,18 @@ function generateAtmosphereBarSegments(results) {
 }
 
 function generateAtmosphereLegend(results) {
+    // Create a Set to track unique materials
+    const seen = new Set();
+
     return results
         .filter(r => r.proportion && r.materialLabel)
+        .filter(r => {
+            // Only keep the first occurrence of each material
+            const material = r.materialLabel.value;
+            if (seen.has(material)) return false;
+            seen.add(material);
+            return true;
+        })
         .map((r, index) => {
             const colors = ['text-blue-500', 'text-emerald-500', 'text-amber-500', 'text-rose-500', 'text-purple-500', 'text-indigo-500'];
             return `

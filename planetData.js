@@ -33,38 +33,56 @@ function buildDBPediaQuery(planetName) {
         PREFIX dbr: <http://dbpedia.org/resource/>
         PREFIX dbp: <http://dbpedia.org/property/>
         PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
         SELECT ?abstract ?maxTemp ?meanTemp ?minTemp ?averageSpeed ?density ?surfaceArea ?volume ?wikidataId
-               (GROUP_CONCAT(DISTINCT ?satellite; SEPARATOR="|") as ?satellites)
-               (GROUP_CONCAT(DISTINCT ?parentBody; SEPARATOR="|") as ?parentBodies)
+               (GROUP_CONCAT(DISTINCT ?satellite; SEPARATOR="|") AS ?satellites)
+               (GROUP_CONCAT(DISTINCT ?parentBody; SEPARATOR="|") AS ?parentBodies)
         WHERE {
-            VALUES ?planet { ${encodedResource} }
-            ?planet dbo:abstract ?abstract ;
-                    owl:sameAs ?wikidataId .
-            FILTER(CONTAINS(STR(?wikidataId), "wikidata.org"))
-            OPTIONAL { ?planet dbo:maximumTemperature ?maxTemp }
-            OPTIONAL { ?planet dbo:meanTemperature ?meanTemp }
-            OPTIONAL { ?planet dbo:minimumTemperature ?minTemp }
-            OPTIONAL { ?planet dbo:averageSpeed ?averageSpeed }
-            OPTIONAL { ?planet dbo:density ?density }
-            OPTIONAL { ?planet dbo:surfaceArea ?surfaceArea }
-            OPTIONAL { ?planet dbo:volume ?volume }
-            OPTIONAL { 
+            # Fetch the abstract (description) and Wikidata ID
+            ${encodedResource} dbo:abstract ?abstract ;
+                               owl:sameAs ?wikidataId .
+            FILTER(CONTAINS(STR(?wikidataId), "wikidata.org")) # Ensure it's a Wikidata reference
+
+            # Retrieve optional planetary properties
+            OPTIONAL { ${encodedResource} dbo:maximumTemperature ?maxTemp }
+            OPTIONAL { ${encodedResource} dbo:meanTemperature ?meanTemp }
+            OPTIONAL { ${encodedResource} dbo:minimumTemperature ?minTemp }
+            OPTIONAL { ${encodedResource} dbo:averageSpeed ?averageSpeed }
+            OPTIONAL { ${encodedResource} dbo:density ?density }
+            OPTIONAL { ${encodedResource} dbo:surfaceArea ?surfaceArea }
+            OPTIONAL { ${encodedResource} dbo:volume ?volume }
+
+            # Retrieve satellites of the planet (Handling both resource & literal values)
+            OPTIONAL {
                 {
-                    ?satellite dbp:satelliteOf ?planet 
-                } UNION {
-                    ?planet ^dbp:satelliteOf ?satellite
+                    ?satellite dbp:satelliteOf ${encodedResource}
+                }
+                UNION
+                {
+                    ${encodedResource} ^dbp:satelliteOf ?satellite
+                }
+                UNION
+                {
+                    ?satellite dbp:satelliteOf "${planetName}"@en
                 }
             }
-            OPTIONAL { 
+
+            # Retrieve parent celestial bodies of the planet (Fixed Virtuoso UNION issue)
+            OPTIONAL {
                 {
-                    ?planet dbp:satelliteOf ?parentBody 
-                } UNION {
-                    ?planet dbo:orbits ?parentBody
-                } UNION {
-                    ?planet dbp:orbits ?parentBody
+                    ${encodedResource} dbp:satelliteOf ?parentBody
+                }
+                UNION
+                {
+                    ${encodedResource} dbo:orbits ?parentBody
+                }
+                UNION
+                {
+                    ${encodedResource} dbp:orbits ?parentBody
                 }
             }
-            FILTER (lang(?abstract) = "en")
+
+            FILTER (lang(?abstract) = "en") # Ensure English description
         } 
         GROUP BY ?abstract ?maxTemp ?meanTemp ?minTemp ?averageSpeed ?density ?surfaceArea ?volume ?wikidataId
         LIMIT 1

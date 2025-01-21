@@ -391,36 +391,37 @@ function generateAtmosphereHTML(atmosphereResults) {
 }
 
 function generateAtmosphereBarSegments(results) {
-    // Create a Set to track unique materials
+    // Create a Set to track unique materials and store processed segments
     const seen = new Set();
+    const segments = [];
+    let cumulativePercentage = 0;
 
-    return results
-        .filter(r => r.proportion)
-        .filter(r => {
-            // Only keep the first occurrence of each material
-            const material = r.materialLabel?.value;
-            if (!material || seen.has(material)) return false;
-            seen.add(material);
-            return true;
-        })
-        .map((r, index) => {
-            const percentage = parseFloat(r.proportion.value) * 100;
-            const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-purple-500', 'bg-indigo-500'];
-            const left = index === 0 ? 0 : results
-                .filter(r => r.proportion)
-                .filter(r => {
-                    const material = r.materialLabel?.value;
-                    return material && !seen.has(material);
-                })
-                .slice(0, index)
-                .reduce((acc, r) => acc + parseFloat(r.proportion.value) * 100, 0);
+    // First pass: collect unique materials and their proportions
+    results
+        .filter(r => r.proportion && r.materialLabel)
+        .forEach(r => {
+            const material = r.materialLabel.value;
+            if (!seen.has(material)) {
+                seen.add(material);
+                const percentage = parseFloat(r.proportion.value) * 100;
+                segments.push({
+                    material,
+                    percentage,
+                    left: cumulativePercentage
+                });
+                cumulativePercentage += percentage;
+            }
+        });
 
-            return `
-                <div class="${colors[index % colors.length]} h-full absolute"
-                     style="left: ${left}%; width: ${percentage}%">
-                </div>
-            `;
-        }).join('');
+    // Generate the HTML for each segment
+    return segments.map((segment, index) => {
+        const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-purple-500', 'bg-indigo-500'];
+        return `
+            <div class="${colors[index % colors.length]} h-full absolute"
+                 style="left: ${segment.left}%; width: ${segment.percentage}%">
+            </div>
+        `;
+    }).join('');
 }
 
 function generateAtmosphereLegend(results) {

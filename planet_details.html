@@ -134,6 +134,20 @@
             color: white;
             padding: 0.5rem;
         }
+
+        /* Add styling for satellite links */
+        .satellite-link {
+            color: #3b82f6;
+            /* Tailwind blue-500 */
+            text-decoration: underline;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .satellite-link:hover {
+            color: #60a5fa;
+            /* Tailwind blue-400 */
+        }
     </style>
 </head>
 
@@ -167,7 +181,8 @@
                     <a href="galaxy.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
                         Galaxies
                     </a>
-                    <a href="astronaut_mission/astronaut_mission_main.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                    <a href="astronaut_mission/astronaut_mission_main.html"
+                        class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
                         Astronaute
                     </a>
                 </div>
@@ -353,7 +368,7 @@
                     `<ul class="list-disc list-inside">
                                 ${data.satellites.map(sat =>
                         `<li><a href="?planetName=${sat.replace(/ /g, '_')}" 
-                                                class="text-gray-300 hover:text-white transition-colors">${sat}</a></li>`
+                                                class="satellite-link">${sat}</a></li>`
                     ).join('')}
                             </ul>` :
                     '<p class="text-gray-500 italic">No satellites found</p>'

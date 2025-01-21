@@ -41,15 +41,15 @@ function levenshteinDistance(a, b) {
 // Fonction pour construire la requête SPARQL en fonction du type
 function buildQuery(searchTerm, searchType) {
     const term = searchTerm.toLowerCase();
-    
+
     // Fonction helper pour créer un filtre de recherche plus flexible
     const createFlexibleFilter = (variable) => {
         return `(CONTAINS(LCASE(${variable}), "${term}"))`;
     };
-    
+
     if (searchType === 'all') {
         query = `
-            SELECT DISTINCT ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars WHERE {
+            SELECT DISTINCT ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars (SAMPLE(?img) as ?thumbnail) WHERE {
                 {
                     ?entity a dbo:Planet ;
                            rdfs:label ?label ;
@@ -57,6 +57,13 @@ function buildQuery(searchTerm, searchType) {
                     BIND("planet" AS ?type)
                     OPTIONAL { ?entity dbo:mass ?mass }
                     OPTIONAL { ?entity dbo:meanRadius ?radius }
+                    OPTIONAL { 
+                        {
+                            ?entity foaf:depiction ?img
+                        } UNION {
+                            ?entity dbp:image ?img
+                        }
+                    }
                 }
                 UNION
                 {
@@ -64,6 +71,7 @@ function buildQuery(searchTerm, searchType) {
                            rdfs:label ?label ;
                            dbo:abstract ?abstract .
                     BIND("galaxy" AS ?type)
+                    OPTIONAL { ?entity dbo:thumbnail ?img }
                 }
                 UNION
                 {
@@ -73,64 +81,127 @@ function buildQuery(searchTerm, searchType) {
                     BIND("constellation" AS ?type)
                     OPTIONAL { ?entity dbo:area ?area }
                     OPTIONAL { ?entity dbp:stars ?stars }
+                    OPTIONAL { ?entity dbo:thumbnail ?img }
                 }
-                FILTER(LANG(?label) = 'fr')
-                FILTER(LANG(?abstract) = 'fr')
+                UNION
+                {
+                    ?entity a dbo:Star ;
+                           rdfs:label ?label ;
+                           dbo:abstract ?abstract .
+                    BIND("star" AS ?type)
+                    OPTIONAL { ?entity dbo:mass ?mass }
+                    OPTIONAL { ?entity dbo:radius ?radius }
+                    OPTIONAL { ?entity dbo:thumbnail ?img }
+                }
+                UNION
+                {
+                    ?entity a yago:BlackHole ;
+                           rdfs:label ?label ;
+                           dbo:abstract ?abstract .
+                    BIND("blackhole" AS ?type)
+                    OPTIONAL { ?entity dbo:mass ?mass }
+                    OPTIONAL { ?entity dbo:thumbnail ?img }
+                }
+                FILTER(LANG(?label) = 'en')
+                FILTER(LANG(?abstract) = 'en')
                 FILTER(${createFlexibleFilter('?label')})
             }
+            GROUP BY ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars
             ORDER BY ASC(STRLEN(?label))
-            LIMIT 30
+            LIMIT 10
         `;
     } else {
-        switch(searchType) {
+        switch (searchType) {
             case 'planet':
                 query = `
-                    SELECT DISTINCT ?entity ?label ?abstract ?mass ?radius WHERE {
+                    SELECT DISTINCT ?entity ?label ?abstract ?mass ?radius (SAMPLE(?img) as ?thumbnail) WHERE {
                         ?entity a dbo:Planet ;
                                rdfs:label ?label ;
                                dbo:abstract ?abstract .
                         OPTIONAL { ?entity dbo:mass ?mass }
                         OPTIONAL { ?entity dbo:meanRadius ?radius }
-                        FILTER(LANG(?label) = 'fr')
-                        FILTER(LANG(?abstract) = 'fr')
+                        OPTIONAL { 
+                            {
+                                ?entity foaf:depiction ?img
+                            } UNION {
+                                ?entity dbp:image ?img
+                            }
+                        }
+                        FILTER(LANG(?label) = 'en')
+                        FILTER(LANG(?abstract) = 'en')
                         FILTER(${createFlexibleFilter('?label')})
                     }
-                    LIMIT 15
+                    GROUP BY ?entity ?label ?abstract ?mass ?radius
+                    LIMIT 10
                 `;
                 break;
             case 'galaxy':
                 query = `
-                    SELECT DISTINCT ?entity ?label ?abstract WHERE {
+                    SELECT DISTINCT ?entity ?label ?abstract ?thumbnail WHERE {
                         ?entity a dbo:Galaxy ;
                                rdfs:label ?label ;
                                dbo:abstract ?abstract .
-                        FILTER(LANG(?label) = 'fr')
-                        FILTER(LANG(?abstract) = 'fr')
+                        OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
+                        FILTER(LANG(?label) = 'en')
+                        FILTER(LANG(?abstract) = 'en')
                         FILTER(${createFlexibleFilter('?label')})
                     }
-                    LIMIT 15
+                    LIMIT 10
                 `;
                 break;
             case 'constellation':
                 query = `
-                    SELECT DISTINCT ?entity ?label ?abstract ?area ?stars WHERE {
+                    SELECT DISTINCT ?entity ?label ?abstract ?area ?stars ?thumbnail WHERE {
                         ?entity a dbo:Constellation ;
                                rdfs:label ?label ;
                                dbo:abstract ?abstract .
                         OPTIONAL { ?entity dbo:area ?area }
                         OPTIONAL { ?entity dbp:stars ?stars }
-                        FILTER(LANG(?label) = 'fr')
-                        FILTER(LANG(?abstract) = 'fr')
+                        OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
+                        FILTER(LANG(?label) = 'en')
+                        FILTER(LANG(?abstract) = 'en')
                         FILTER(${createFlexibleFilter('?label')})
                     }
                     ORDER BY ASC(STRLEN(?label))
-                    LIMIT 15
+                    LIMIT 10
+                `;
+                break;
+            case 'star':
+                query = `
+                    SELECT DISTINCT ?entity ?label ?abstract ?mass ?radius ?thumbnail WHERE {
+                        ?entity a dbo:Star ;
+                               rdfs:label ?label ;
+                               dbo:abstract ?abstract .
+                        OPTIONAL { ?entity dbo:mass ?mass }
+                        OPTIONAL { ?entity dbo:radius ?radius }
+                        OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
+                        FILTER(LANG(?label) = 'en')
+                        FILTER(LANG(?abstract) = 'en')
+                        FILTER(${createFlexibleFilter('?label')})
+                    }
+                    ORDER BY ASC(STRLEN(?label))
+                    LIMIT 10
+                `;
+                break;
+            case 'blackhole':
+                query = `
+                    SELECT DISTINCT ?entity ?label ?abstract ?mass ?thumbnail WHERE {
+                        ?entity a yago:BlackHole ;
+                               rdfs:label ?label ;
+                               dbo:abstract ?abstract .
+                        OPTIONAL { ?entity dbo:mass ?mass }
+                        OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
+                        FILTER(LANG(?label) = 'en')
+                        FILTER(LANG(?abstract) = 'en')
+                        FILTER(${createFlexibleFilter('?label')})
+                    }
+                    ORDER BY ASC(STRLEN(?label))
+                    LIMIT 10
                 `;
                 break;
         }
-
     }
-    
+
     return encodeURIComponent(query);
 }
 
@@ -139,20 +210,20 @@ function calculateRelevanceScore(searchTerm, label, abstract = '') {
     const cleanSearchTerm = cleanText(searchTerm.toLowerCase());
     const cleanLabel = cleanText(label.toLowerCase());
     const cleanAbstract = cleanText(abstract.toLowerCase());
-    
+
     // Distance de Levenshtein normalisée (0 à 1, où 1 est une correspondance parfaite)
     const maxLength = Math.max(cleanSearchTerm.length, cleanLabel.length);
     const levenScore = 1 - (levenshteinDistance(cleanSearchTerm, cleanLabel) / maxLength);
-    
+
     // Bonus pour les correspondances exactes
     const exactMatchBonus = cleanLabel.includes(cleanSearchTerm) ? 0.3 : 0;
-    
+
     // Bonus pour les correspondances au début
     const startsWithBonus = cleanLabel.startsWith(cleanSearchTerm) ? 0.2 : 0;
-    
+
     // Bonus pour les correspondances dans la description
     const abstractBonus = cleanAbstract.includes(cleanSearchTerm) ? 0.1 : 0;
-    
+
     return levenScore + exactMatchBonus + startsWithBonus + abstractBonus;
 }
 
@@ -170,26 +241,26 @@ async function search() {
     const searchInput = document.getElementById('searchInput');
     const searchType = document.getElementById('searchType');
     const resultsDiv = document.getElementById('results');
-    
+
     if (!searchInput.value.trim()) {
         resultsDiv.innerHTML = '<p>Veuillez entrer un terme de recherche</p>';
         return;
     }
-    
+
     resultsDiv.innerHTML = '<p>Recherche en cours...</p>';
-    
+
     const query = buildQuery(searchInput.value.trim(), searchType.value);
     const url = `${DBPEDIA_ENDPOINT}?query=${query}&format=json`;
-    
+
     try {
         const response = await fetch(url, {
             headers: {
                 'Accept': 'application/sparql-results+json'
             }
         });
-        
+
         if (!response.ok) throw new Error('Erreur réseau');
-        
+
         const data = await response.json();
         const sortedResults = sortResultsByRelevance(data.results.bindings, searchInput.value.trim());
         displayResults(sortedResults, searchType.value);
@@ -201,44 +272,69 @@ async function search() {
 // Fonction pour afficher les résultats
 function displayResults(results, searchType) {
     const resultsDiv = document.getElementById('results');
-    
+
     if (!results || results.length === 0) {
         resultsDiv.innerHTML = `
             <div class="glass rounded-xl p-6 text-center">
-                <p class="text-gray-400">Aucun résultat trouvé</p>
+                <p class="text-gray-400">No results found</p>
             </div>`;
         return;
     }
-    
-    let html = '';
-    results.forEach((result, index) => {
-        const label = cleanText(result.label?.value || 'Sans nom');
-        const abstract = result.abstract?.value || 'Pas de description disponible';
+
+    resultsDiv.innerHTML = '';
+    results.forEach(result => {
+        const card = document.createElement('div');
+        card.className = 'glass rounded-xl p-6 hover:bg-white/5 transition-all duration-300';
+
         const type = result.type?.value || searchType;
-        
-        html += `
-            <div class="glass rounded-xl p-6 transform transition-all duration-300 hover:scale-[1.02] cursor-pointer" 
-                 onclick="showDetails(${index}, ${JSON.stringify(result).replace(/"/g, '&quot;')}, '${type}')">
-                <div class="flex flex-col gap-3">
-                    <div class="flex items-start justify-between">
-                        <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                            ${label}
-                        </h2>
-                        ${searchType === 'all' ? `
-                            <span class="result-type px-3 py-1 rounded-full text-sm font-medium text-cyan-400">
-                                ${getTypeLabel(type)}
-                            </span>
-                        ` : ''}
+        const name = result.label?.value || 'Unnamed';
+        const abstract = result.abstract?.value || 'No description available';
+        const image = result.thumbnail?.value || null;
+
+        let link = '#';
+        if (type === 'planet') {
+            const planetName = name.split(' ')[0]; // On prend le premier mot du nom (ex: "Mars" dans "Mars (planet)")
+            link = `planet_details.html?planetName=${planetName}`;
+        } else if (type === 'galaxy') {
+            const galaxyName = name.split(' ')[0]; // On prend le premier mot du nom (ex: "Mars" dans "Mars (planet)")
+            link = `galaxy-details.html?galaxyName=${name}`;
+        } else if (type === 'star') {
+            link = `details-star.html?name=${encodeURIComponent(name)}`;
+        } else if (type === 'constellation') {
+            link = `constellation-details.html?name=${encodeURIComponent(name)}`;
+        } else if (type === 'blackhole') {
+            link = `details.html?name=${encodeURIComponent(name)}`;
+        }
+
+        card.innerHTML = `
+            <div class="flex flex-col md:flex-row gap-6">
+                ${image ? `
+                    <div class="md:w-1/3 flex-shrink-0">
+                        <img src="${image}" alt="${name}" class="w-full h-48 object-cover rounded-lg">
                     </div>
-                    
-                    <p class="text-gray-300 leading-relaxed line-clamp-3">
-                        ${abstract}
-                    </p>
+                ` : ''}
+                <div class="flex-1">
+                    <div class="flex items-center gap-4 mb-4">
+                        <h3 class="text-xl font-bold">${name}</h3>
+                        <span class="result-type px-2 py-1 rounded-full text-xs font-medium">${type}</span>
+                    </div>
+                    <p class="text-gray-300 mb-4">${abstract.substring(0, 200)}...</p>
+                    ${type === 'planet' ? `
+                        <a href="${link}" class="inline-block bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
+                            View details
+                        </a>
+                    ` :
+                (type === 'galaxy' || type === 'star' || type === 'constellation' || type === 'blackhole' ? `
+                        <a href="${link}" class="inline-block bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
+                            View details
+                        </a>
+                    ` : '')}
                 </div>
-            </div>`;
+            </div>
+        `;
+
+        resultsDiv.appendChild(card);
     });
-    
-    resultsDiv.innerHTML = html;
 }
 
 // Fonction pour afficher les détails dans le modal
@@ -246,13 +342,19 @@ function showDetails(index, result, type) {
     const modal = document.getElementById('detailModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalContent = document.getElementById('modalContent');
-    
+
     const label = cleanText(result.label?.value || 'Sans nom');
     const abstract = result.abstract?.value || 'Pas de description disponible';
-    
+
     modalTitle.textContent = label;
-    
+
     let content = `
+        <div id="modalImage" class="w-full flex justify-center mb-6">
+            ${result.thumbnail?.value ?
+            `<img src="${result.thumbnail.value}" alt="${label}" 
+                     class="rounded-lg max-h-[300px] object-cover shadow-lg" />`
+            : ''}
+        </div>
         <div class="space-y-6">
             <div class="info-card">
                 <p class="text-gray-300 leading-relaxed text-lg">
@@ -310,7 +412,7 @@ function showDetails(index, result, type) {
             </div>
         `;
     }
-    
+
     content += `
             <div class="info-card mt-6">
                 <p class="text-sm text-gray-400">
@@ -321,7 +423,7 @@ function showDetails(index, result, type) {
             </div>
         </div>
     `;
-    
+
     modalContent.innerHTML = content;
     modal.classList.add('active');
 
@@ -335,41 +437,41 @@ function showDetails(index, result, type) {
 function closeModal() {
     const modal = document.getElementById('detailModal');
     const modalContent = modal.querySelector('.modal-content');
-    
+
     modalContent.style.opacity = '0';
     modalContent.style.transform = 'scale(0.95)';
-    
+
     setTimeout(() => {
         modal.classList.remove('active');
     }, 300);
 }
 
 // Fermer le modal en cliquant en dehors
-document.getElementById('detailModal').addEventListener('click', function(e) {
+document.getElementById('detailModal').addEventListener('click', function (e) {
     if (e.target === this) {
         closeModal();
     }
 });
 
 // Fermer le modal avec la touche Echap
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         closeModal();
     }
 });
 
-// Fonction pour obtenir le label du type en français
+// Fonction pour obtenir le label du type en anglais
 function getTypeLabel(type) {
     const types = {
-        'planet': 'Planète',
-        'galaxy': 'Galaxie',
+        'planet': 'Planet',
+        'galaxy': 'Galaxy',
         'constellation': 'Constellation'
     };
     return types[type] || type;
 }
 
 // Permettre la recherche avec la touche Entrée
-document.getElementById('searchInput').addEventListener('keypress', function(e) {
+document.getElementById('searchInput').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
         search();
     }
@@ -377,13 +479,51 @@ document.getElementById('searchInput').addEventListener('keypress', function(e) 
 
 // Fonction pour formater les valeurs numériques
 function formatValue(value) {
-    if (!value) return 'Non disponible';
-    
+    if (!value) return 'Not available';
+
     // Si c'est un nombre scientifique
     if (value.includes('E')) {
         const [num, exp] = value.split('E');
         return `${parseFloat(num).toFixed(2)} × 10<sup>${exp}</sup>`;
     }
-    
+
     return value;
-} 
+}
+
+// Fonction pour créer une carte de constellation
+function createConstellationCard(constellation) {
+    const card = document.createElement('div');
+    card.className = 'glass rounded-xl overflow-hidden transform transition-all duration-300 hover:scale-[1.02] cursor-pointer mb-6';
+    card.onclick = () => window.location.href = `constellation.html?name=${encodeURIComponent(constellation.name)}`;
+
+    // Créer le contenu de la carte
+    const imageStyle = constellation.image ?
+        `background-image: url('${constellation.image}'); height: 200px;` :
+        'height: 0;';
+
+    card.innerHTML = `
+        <div class="bg-cover bg-center" style="${imageStyle}"></div>
+        <div class="p-6">
+            <h2 class="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                ${constellation.name}
+            </h2>
+            <div class="flex flex-wrap gap-2 mb-4">
+                ${constellation.stars ? `
+                    <div class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm">
+                        ${constellation.stars} stars
+                    </div>
+                ` : ''}
+                ${constellation.area ? `
+                    <div class="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-sm">
+                        ${parseFloat(constellation.area).toFixed(2)} sq deg
+                    </div>
+                ` : ''}
+            </div>
+            <p class="text-gray-300 line-clamp-3">
+                ${constellation.abstract}
+            </p>
+        </div>
+    `;
+
+    return card;
+}

@@ -98,9 +98,40 @@
                 <div class="glass rounded-xl p-6 text-center">
                     <p class="text-gray-400">Loading...</p>
                 </div>
+                <div class="info-section mb-6">
+                    <h3 class="text-xl font-semibold mb-2 text-cyan-400">Constellation</h3>
+                    <a href="#" id="constellationLink" class="glass rounded-lg p-4 flex items-center justify-between hover:bg-white/10 transition-all duration-300">
+                        <span id="constellationName" class="text-cyan-400"></span>
+                        <button class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
+                            View Constellation Details
+                        </button>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
     <script src="details.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Récupérer et afficher les données
+        const displayData = (data) => {
+            if (data && data.results && data.results.bindings && data.results.bindings.length > 0) {
+                const result = data.results.bindings[0];
+                
+                // Mise à jour du lien de la constellation
+                const constellationUri = result.constell?.value;
+                if (constellationUri) {
+                    const constellationName = constellationUri.split('/').pop(); // Extraire le nom de l'URI
+                    document.getElementById('constellationName').textContent = decodeURIComponent(constellationName);
+                    document.getElementById('constellationLink').href = `constellation-details.html?name=${encodeURIComponent(constellationName)}`;
+                }
+                
+                // ... rest of your existing code ...
+            }
+        };
+
+        // ... rest of your existing code ...
+    });
+    </script>
 </body>
 </html> 

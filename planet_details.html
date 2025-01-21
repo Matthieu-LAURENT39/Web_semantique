@@ -421,9 +421,9 @@
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const planetName = urlParams.get('planetName');
-            // If planetName is not provided, redirect to Mars
+            // If planetName is not provided, redirect to the search
             if (!planetName) {
-                window.location.href = '?planetName=Mars';
+                window.location.href = 'planet.html';
             }
 
             // Load data for both the selected planet and Earth (for comparison)

@@ -267,32 +267,16 @@ function formatConstellationDetails(constellation) {
 
     // Galaxies in the Constellation
     if (constellation.galaxies) {
-        const galaxyCards = constellation.galaxies.split(', ')
-            .map(galaxy => `
-                <div class="bg-gradient-to-br from-blue-900/70 via-cyan-900/70 to-indigo-900/70 
-                    rounded-xl p-4 backdrop-blur-sm shadow-lg shadow-blue-900/20
-                    hover:shadow-blue-700/30 transition-all duration-300 transform hover:scale-[1.02]
-                    border border-blue-500/20">
-                    <a href="galaxy-details.html?galaxyName=${encodeURIComponent(galaxy)}" 
-                        class="block">
-                        <div class="flex items-center space-x-3 mb-2">
-                            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                            </svg>
-                            <h3 class="text-lg font-medium bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent hover:from-blue-200 hover:to-cyan-200 transition-colors duration-200">${galaxy}</h3>
-                        </div>
-                    </a>
-                </div>
-            `).join('');
+        const galaxiesSection = document.createElement('div');
+        galaxiesSection.setAttribute('data-section', 'galaxies');
         
         sections.push({
             title: "Notable Galaxies",
-            content: `
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    ${galaxyCards}
-                </div>
-            `
+            content: galaxiesSection.outerHTML
         });
+
+        // Initialize galaxies section after the sections are added to the DOM
+        setTimeout(() => initializeGalaxiesSection(constellation), 0);
     }
 
     return sections;
@@ -522,6 +506,213 @@ async function updateStarsSection(constellation) {
     } catch (error) {
         console.error('Error fetching stars:', error);
         starsSection.innerHTML = '<p class="text-red-400 text-center">Error loading stars</p>';
+    }
+}
+
+// Add pagination state for galaxies
+let currentGalaxiesPage = 1;
+const galaxiesPerPage = 12;
+let totalGalaxiesCount = 0;
+
+// Function to get total galaxies count
+async function getTotalGalaxiesCount(constellationName) {
+    const countQuery = `
+        PREFIX dbo: <http://dbpedia.org/ontology/>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX dbp: <http://dbpedia.org/property/>
+        
+        SELECT (COUNT(DISTINCT ?galaxy) as ?count)
+        WHERE {
+            ?constellation a dbo:Constellation ;
+                rdfs:label ?name .
+            ?galaxy a dbo:Galaxy ;
+                rdfs:label ?galaxyName ;
+                dbp:constellationName ?constellation .
+            FILTER(LANG(?name) = 'en')
+            FILTER(LANG(?galaxyName) = 'en')
+            FILTER(CONTAINS(LCASE(?name), LCASE("${constellationName}")))
+        }
+    `;
+
+    try {
+        const countUrl = `https://dbpedia.org/sparql?query=${encodeURIComponent(countQuery)}&format=json`;
+        const countResponse = await fetch(countUrl, {
+            headers: { 'Accept': 'application/sparql-results+json' }
+        });
+        const countData = await countResponse.json();
+        return parseInt(countData.results.bindings[0].count.value);
+    } catch (error) {
+        console.error('Error fetching total galaxies count:', error);
+        throw error;
+    }
+}
+
+// Function to fetch galaxies for a constellation with pagination
+async function fetchGalaxiesForConstellation(constellationName, page) {
+    const offset = (page - 1) * galaxiesPerPage;
+    
+    const galaxiesQuery = `
+        PREFIX dbo: <http://dbpedia.org/ontology/>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX dbp: <http://dbpedia.org/property/>
+        
+        SELECT DISTINCT ?galaxyName
+        WHERE {
+            ?constellation a dbo:Constellation ;
+                rdfs:label ?name .
+            ?galaxy a dbo:Galaxy ;
+                rdfs:label ?galaxyName ;
+                dbp:constellationName ?constellation .
+            FILTER(LANG(?name) = 'en')
+            FILTER(LANG(?galaxyName) = 'en')
+            FILTER(CONTAINS(LCASE(?name), LCASE("${constellationName}")))
+        }
+        ORDER BY ?galaxyName
+        LIMIT ${galaxiesPerPage}
+        OFFSET ${offset}
+    `;
+
+    try {
+        const galaxiesUrl = `https://dbpedia.org/sparql?query=${encodeURIComponent(galaxiesQuery)}&format=json`;
+        const galaxiesResponse = await fetch(galaxiesUrl, {
+            headers: { 'Accept': 'application/sparql-results+json' }
+        });
+        const galaxiesData = await galaxiesResponse.json();
+
+        return {
+            galaxies: galaxiesData.results.bindings,
+            totalCount: totalGalaxiesCount
+        };
+    } catch (error) {
+        console.error('Error fetching galaxies:', error);
+        throw error;
+    }
+}
+
+// Function to initialize galaxies section
+async function initializeGalaxiesSection(constellation) {
+    try {
+        // Get the constellation name
+        let constellationName = constellation.name;
+        if (!constellationName) {
+            const urlParams = new URLSearchParams(window.location.search);
+            constellationName = urlParams.get('name');
+        }
+
+        // Get total count once
+        totalGalaxiesCount = await getTotalGalaxiesCount(constellationName);
+        
+        // Initialize first page
+        await updateGalaxiesSection(constellation);
+    } catch (error) {
+        console.error('Error initializing galaxies section:', error);
+    }
+}
+
+// Function to create galaxies pagination controls
+function createGalaxiesPaginationControls(totalGalaxies, constellationName) {
+    const totalPages = Math.ceil(totalGalaxies / galaxiesPerPage);
+    const paginationContainer = document.createElement('div');
+    paginationContainer.className = 'flex justify-center items-center space-x-2 mt-4';
+
+    // Previous button
+    const prevButton = document.createElement('button');
+    prevButton.className = `px-3 py-1 rounded-lg ${currentGalaxiesPage === 1 ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-cyan-500 text-white hover:bg-cyan-600'} transition-colors duration-200`;
+    prevButton.textContent = 'Previous';
+    prevButton.disabled = currentGalaxiesPage === 1;
+    prevButton.onclick = async () => {
+        console.log("Previous galaxies button clicked");
+        if (currentGalaxiesPage > 1) {
+            currentGalaxiesPage--;
+            await updateGalaxiesSection({ name: constellationName });
+        }
+    };
+
+    // Next button
+    const nextButton = document.createElement('button');
+    nextButton.className = `px-3 py-1 rounded-lg ${currentGalaxiesPage >= totalPages ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-cyan-500 text-white hover:bg-cyan-600'} transition-colors duration-200`;
+    nextButton.textContent = 'Next';
+    nextButton.disabled = currentGalaxiesPage >= totalPages;
+    nextButton.onclick = async () => {
+        console.log("Next galaxies button clicked");
+        if (currentGalaxiesPage < totalPages) {
+            currentGalaxiesPage++;
+            await updateGalaxiesSection({ name: constellationName });
+        }
+    };
+
+    // Page info with total galaxies count
+    const pageInfo = document.createElement('span');
+    pageInfo.className = 'text-gray-300 text-sm';
+    pageInfo.textContent = `Page ${currentGalaxiesPage} of ${totalPages} (${totalGalaxies} galaxies)`;
+
+    paginationContainer.appendChild(prevButton);
+    paginationContainer.appendChild(pageInfo);
+    paginationContainer.appendChild(nextButton);
+
+    return paginationContainer;
+}
+
+// Function to update galaxies section
+async function updateGalaxiesSection(constellation) {
+    console.log('Updating galaxies section');
+    const galaxiesSection = document.querySelector('[data-section="galaxies"]');
+    if (!galaxiesSection) return;
+
+    try {
+        // Add loading state
+        galaxiesSection.innerHTML = '<p class="text-gray-400 text-center">Loading galaxies...</p>';
+        
+        // Get the constellation name from the URL if not provided
+        let constellationName = constellation.name;
+        if (!constellationName) {
+            const urlParams = new URLSearchParams(window.location.search);
+            constellationName = urlParams.get('name');
+        }
+        
+        const { galaxies } = await fetchGalaxiesForConstellation(constellationName, currentGalaxiesPage);
+        if (galaxies.length === 0) {
+            galaxiesSection.innerHTML = '<p class="text-gray-400 text-center">No galaxies found</p>';
+            return;
+        }
+
+        const galaxyCards = galaxies.map(result => `
+            <div class="bg-gradient-to-br from-blue-900/70 via-cyan-900/70 to-indigo-900/70 
+                rounded-xl p-4 backdrop-blur-sm shadow-lg shadow-blue-900/20
+                hover:shadow-blue-700/30 transition-all duration-300 transform hover:scale-[1.02]
+                border border-blue-500/20">
+                <a href="galaxy-details.html?galaxyName=${encodeURIComponent(result.galaxyName.value)}" 
+                    class="block">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        <h3 class="text-lg font-medium bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent hover:from-blue-200 hover:to-cyan-200 transition-colors duration-200">${result.galaxyName.value}</h3>
+                    </div>
+                </a>
+            </div>
+        `).join('');
+
+        // Create the content container
+        const contentContainer = document.createElement('div');
+        contentContainer.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                ${galaxyCards}
+            </div>
+        `;
+
+        // Clear the section and add the galaxy cards
+        galaxiesSection.innerHTML = '';
+        galaxiesSection.appendChild(contentContainer);
+
+        // Add pagination if needed
+        if (totalGalaxiesCount > galaxiesPerPage) {
+            const paginationContainer = createGalaxiesPaginationControls(totalGalaxiesCount, constellationName);
+            galaxiesSection.appendChild(paginationContainer);
+        }
+    } catch (error) {
+        console.error('Error fetching galaxies:', error);
+        galaxiesSection.innerHTML = '<p class="text-red-400 text-center">Error loading galaxies</p>';
     }
 }
 

@@ -6,39 +6,46 @@ function getQueryParam(param) {
     return urlParams.get(param);
 }
 
-
-// Fonction pour fetch les détails d'un astronaute en particulier 
+// Fonction pour fetch les détails d'une mission en particulier 
 async function loadMissionDetails() {
-    missionURI = getQueryParam("uri")
+    const missionName = getQueryParam("name");
+    if (!missionName) {
+        showNoDetailsFound();
+        return;
+    }
+
     try {
         let query = `
-            SELECT DISTINCT ?label ?abstract ?landingDate ?launchDate ?launchVehicle ?nextMission SAMPLE(?thumbnail) as ?img ?previousMission ?operator ?missionType  (GROUP_CONCAT(DISTINCT ?member; separator=", ") AS ?crewMember)
-            WHERE {
-            <${missionURI}> a dbo:SpaceMission ;
-                    rdfs:label ?label ;
-                    dbo:abstract ?abstract.
-
-            OPTIONAL {<${missionURI}> dbo:landingDate ?landingDate. }
-            OPTIONAL {<${missionURI}> foaf:depiction ?thumbnail. }
-            OPTIONAL {<${missionURI}> dbo:crewMember ?member. }
-            OPTIONAL {<${missionURI}> dbo:launchVehicle ?launchVehicle. }
-            OPTIONAL {<${missionURI}> dbo:nextMission ?nextMission. }
-            OPTIONAL {<${missionURI}> dbo:previousMission ?previousMission. }
-            OPTIONAL {<${missionURI}> dbo:operator ?operator. }
-            OPTIONAL {<${missionURI}> dbp:missionType ?missionType. }
-            OPTIONAL {<${missionURI}> dbo:launchDate ?launchDate.}
-
-            FILTER (lang(?label) = "en" && lang(?abstract) = "en")
-            }
+            SELECT DISTINCT ?entity ?label ?abstract 
+                SAMPLE(?thumbnail) as ?img
+                (GROUP_CONCAT(DISTINCT ?operator; separator=", ") AS ?operators)
+                (GROUP_CONCAT(DISTINCT ?crew; separator=", ") AS ?crews)
+                ?launchDate ?landingDate
+                (GROUP_CONCAT(DISTINCT ?launchSite; separator=", ") AS ?launchSites)
+                WHERE {
+                    ?entity rdf:type dbo:SpaceMission ;
+                            rdfs:label ?label .
+                    FILTER(REPLACE(str(?label), "_", " ") = "${missionName}")
+                    FILTER(LANG(?label) = 'en')
+                    
+                    OPTIONAL { ?entity dbo:abstract ?abstract . FILTER(LANG(?abstract) = 'en') }
+                    OPTIONAL { ?entity foaf:depiction ?thumbnail }
+                    OPTIONAL { ?entity dbo:operator ?operator }
+                    OPTIONAL { ?entity dbo:crew ?crew }
+                    OPTIONAL { ?entity dbo:launchDate ?launchDate }
+                    OPTIONAL { ?entity dbo:landingDate ?landingDate }
+                    OPTIONAL { ?entity dbp:launchSite ?launchSite }
+                }
+                GROUP BY ?entity ?label ?abstract ?launchDate ?landingDate
             `;
         query = encodeURIComponent(query);
 
         const url = `${DBPEDIA_ENDPOINT}?query=${query}&format=json`;
         const response = await fetch(url, {
             headers: {
-                    'Accept': 'application/sparql-results+json'
-                }
-            });
+                'Accept': 'application/sparql-results+json'
+            }
+        });
         
         if (!response.ok) throw new Error('Network error');
             
@@ -53,104 +60,77 @@ async function loadMissionDetails() {
         }
     } catch (error) {
         console.error("Error loading mission details:", error);
+        showNoDetailsFound();
     }
 }
 
-// Fonction pour afficher les détails dans le modal
+// Fonction pour afficher les détails de la mission
 function showDetailsMission(result) {
     const label = result.label?.value || 'No name';
     const abstract = result.abstract?.value || 'No description available';
-    const crewMember = result.crewMember?.value || 'Unknown';
     const img = result.img?.value || 'default-mission.svg';
-    const landingDate = result.landingDate?.value || 'Unknown';
+    const operators = result.operators?.value || 'Unknown';
+    const crews = result.crews?.value || 'Unknown';
     const launchDate = result.launchDate?.value || 'Unknown';
-    const launchVehicle = result.launchVehicle?.value || 'Unknown';
-    const nextMission = result.nextMission?.value || 'Unknown';
-    const previousMission = result.previousMission?.value || 'Unknown';
-    const operator = result.operator?.value || 'Unknown';
-    const missionType = result.missionType?.value || 'Unknown';
+    const landingDate = result.landingDate?.value || 'Unknown';
+    const launchSites = result.launchSites?.value || 'Unknown';
 
-    // Mise à jour des champs principaux
     document.getElementById("mission-img").src = img;
     document.getElementById("mission-img").alt = label;
     document.getElementById("mission-label").textContent = label;
     document.getElementById("mission-description").textContent = abstract;
 
-    // Affichage conditionnel des sections
-    if (landingDate !== 'Unknown') {
-        document.getElementById("mission-landingDate").textContent = landingDate;
-    } else {
-        document.getElementById("mission-landingDate").parentElement.style.display = 'none';
-    }
-
-    if (launchDate !== 'Unknown') {
-        document.getElementById("mission-launchDate").textContent = launchDate;
-    } else {
-        document.getElementById("mission-launchDate").parentElement.style.display = 'none';
-    }
-
-    if (launchVehicle !== 'Unknown') {
-        document.getElementById("mission-launchVehicle").textContent = launchVehicle;
-    } else {
-        document.getElementById("mission-launchVehicle").parentElement.style.display = 'none';
-    }
-
-    if (operator !== 'Unknown') {
-        document.getElementById("mission-operator").textContent = operator;
-    } else {
-        document.getElementById("mission-operator").parentElement.style.display = 'none';
-    }
-
-    if (missionType !== 'Unknown') {
-        document.getElementById("mission-type").textContent = missionType;
-    } else {
-        document.getElementById("mission-type").parentElement.style.display = 'none';
-    }
-
-    // Gestion des équipages
-    const crewListElement = document.getElementById("crew-list");
-    crewListElement.innerHTML = ""; // Réinitialiser la liste
-    if (crewMember !== 'Unknown') {
-        const crewMemberList = crewMember.split(",");
-        crewMemberList.forEach((astronautUri) => {
-            const astronautName = astronautUri.split("/").pop().replace(/_/g, " ");
+    // Mise à jour des opérateurs
+    const operatorsElement = document.getElementById("mission-operators");
+    if (operators !== 'Unknown') {
+        const operatorsList = operators.split(",");
+        operatorsElement.innerHTML = ""; // Réinitialiser le contenu
+        operatorsList.forEach((operatorUri) => {
+            const operatorName = operatorUri.split("/").pop().replace(/_/g, " ");
             const listItem = document.createElement("li");
-            const link = document.createElement("a");
-            link.href = `/astronaut_mission/astronaut_detail.html?uri=${encodeURIComponent(astronautUri.trim())}`;
-            link.textContent = astronautName;
-            link.classList.add("text-cyan-400", "hover:underline");
-            listItem.appendChild(link);
-            crewListElement.appendChild(listItem);
+            listItem.textContent = operatorName;
+            operatorsElement.appendChild(listItem);
         });
     } else {
-        document.getElementById("mission-crew").parentElement.style.display = 'none';
+        operatorsElement.textContent = operators;
     }
 
-    // Gestion des missions précédentes et suivantes
-    if (previousMission !== 'Unknown') {
-        const previousMissionName = previousMission.split("/").pop().replace(/_/g, " ");
-        const previousMissionLink = document.createElement("a");
-        previousMissionLink.href = `/astronaut_mission/mission_detail.html?uri=${encodeURIComponent(previousMission.trim())}`;
-        previousMissionLink.textContent = previousMissionName;
-        previousMissionLink.classList.add("text-cyan-400", "hover:underline");
-        const previousMissionContainer = document.getElementById("mission-previousMission");
-        previousMissionContainer.innerHTML = ""; // Réinitialiser
-        previousMissionContainer.appendChild(previousMissionLink);
+    // Mise à jour de l'équipage
+    const crewsElement = document.getElementById("mission-crews");
+    if (crews !== 'Unknown') {
+        const crewsList = crews.split(",");
+        crewsElement.innerHTML = ""; // Réinitialiser le contenu
+        crewsList.forEach((crewUri) => {
+            const crewName = crewUri.split("/").pop().replace(/_/g, " ");
+            const listItem = document.createElement("li");
+            const link = document.createElement("a");
+            link.href = `astronaut_detail.html?name=${encodeURIComponent(crewName)}`;
+            link.textContent = crewName;
+            link.classList.add("text-cyan-400", "hover:underline");
+            listItem.appendChild(link);
+            crewsElement.appendChild(listItem);
+        });
     } else {
-        document.getElementById("mission-previousMission").parentElement.style.display = 'none';
+        document.getElementById("crews-section").style.display = 'none';
     }
 
-    if (nextMission !== 'Unknown') {
-        const nextMissionName = nextMission.split("/").pop().replace(/_/g, " ");
-        const nextMissionLink = document.createElement("a");
-        nextMissionLink.href = `/astronaut_mission/mission_detail.html?uri=${encodeURIComponent(nextMission.trim())}`;
-        nextMissionLink.textContent = nextMissionName;
-        nextMissionLink.classList.add("text-cyan-400", "hover:underline");
-        const nextMissionContainer = document.getElementById("mission-nextMission");
-        nextMissionContainer.innerHTML = ""; // Réinitialiser
-        nextMissionContainer.appendChild(nextMissionLink);
+    // Mise à jour des dates
+    document.getElementById("mission-launch-date").textContent = formatDate(launchDate);
+    document.getElementById("mission-landing-date").textContent = formatDate(landingDate);
+
+    // Mise à jour des sites de lancement
+    const launchSitesElement = document.getElementById("mission-launch-sites");
+    if (launchSites !== 'Unknown') {
+        const sitesList = launchSites.split(",");
+        launchSitesElement.innerHTML = ""; // Réinitialiser le contenu
+        sitesList.forEach((siteUri) => {
+            const siteName = siteUri.split("/").pop().replace(/_/g, " ");
+            const listItem = document.createElement("li");
+            listItem.textContent = siteName;
+            launchSitesElement.appendChild(listItem);
+        });
     } else {
-        document.getElementById("mission-nextMission").parentElement.style.display = 'none';
+        launchSitesElement.textContent = launchSites;
     }
 }
 
@@ -158,13 +138,23 @@ function showNoDetailsFound() {
     document.getElementById("mission-label").textContent = "No Information Available";
     document.getElementById("mission-img").src = "default-mission.svg";
     document.getElementById("mission-img").alt = "No Image Available";
-
-     // Mise à jour des détails
-     document.getElementById("mission-info").textContent.style.display = 'none';
-     document.getElementById("mission-details").textContent.style.display = 'none'
-     document.getElementById("mission-relations").textContent.style.display = 'none'
-    
+    document.getElementById("mission-description").textContent = "No description available";
+    document.getElementById("mission-operators").textContent = "Unknown";
+    document.getElementById("crews-section").style.display = 'none';
+    document.getElementById("mission-launch-date").textContent = "Unknown";
+    document.getElementById("mission-landing-date").textContent = "Unknown";
+    document.getElementById("mission-launch-sites").textContent = "Unknown";
 }
 
+// Fonction pour formater les dates
+function formatDate(dateString) {
+    if (dateString === 'Unknown') return dateString;
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString();
+    } catch (e) {
+        return dateString;
+    }
+}
 
 loadMissionDetails();

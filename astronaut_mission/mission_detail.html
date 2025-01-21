@@ -3,53 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Astronaut & Mission</title>
+    <title>Mission Detail</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="min-h-screen">
+<body class="min-h-screen bg-gray-50">
     <div class="relative min-h-screen flex items-start justify-center p-4">
-        <div class="content-container w-full">
-            <header class="text-center mb-8 pt-8">
+        <div class="content-container w-full max-w-6xl shadow-lg rounded-lg p-6">
+            <!-- Titre principal -->
+            <header class="text-center mb-8">
                 <h1 class="text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
                     Mission Detail
                 </h1>
             </header>
-        
+
             <!-- Conteneur principal en deux colonnes -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Colonne gauche (1/3) -->
                 <div class="col-span-1">
                     <div class="text-center mb-4">
-                        <img id="mission-img" src="" alt="Astronaut Image" class="w-full h-auto object-cover rounded-lg shadow-md">
+                        <img id="mission-img" src="" alt="Mission Image" class="w-full h-auto object-cover rounded-lg shadow-md">
                         <h1 id="mission-label" class="text-2xl font-semibold mt-4 bg-gradient-to-r from-cyan-400 to-blue-500"></h1>
                     </div>
-                    <div id="mission-info" class="space-y-2 text-white-700">
-                        <p><strong>Landing Date :</strong> <span id="mission-landingDate"></span></p>
-                        <p><strong>Launch Date :</strong> <span id="mission-launchDate"></span></p>
-                        <p><strong>Launch Vehicle :</strong> <span id="mission-launchVehicle"></span></p>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-bold">Launch Date:</h3>
+                            <p id="mission-launch-date"></p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold">Landing Date:</h3>
+                            <p id="mission-landing-date"></p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold">Launch Sites:</h3>
+                            <ul id="mission-launch-sites" class="list-disc list-inside"></ul>
+                        </div>
+                        <div>
+                            <h3 class="font-bold">Operators:</h3>
+                            <ul id="mission-operators" class="list-disc list-inside"></ul>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Colonne droite (2/3) -->
                 <div class="col-span-2">
-                    <div id="mission-details" class="mb-6 text-white-700">
-                        <br/><p><strong>Description :</strong> <span id="mission-description"></span></p>
-                        <br/><p><strong>Operator :</strong> <span id="mission-operator"></span></p>
-                        <br/><p><strong>Type :</strong> <span id="mission-type"></span></p>
+                    <div class="mb-6">
+                        <h3 class="font-bold">Description:</h3>
+                        <p id="mission-description"></p>
                     </div>
-                    <div id="mission-relations">
-                        <h3 class="text-xl font-bold mb-2">Related Missions</h3>
-                        <p><strong>Previous Mission:</strong> <span id="mission-previousMission"></span></p>
-                        <br/><p><strong>Next Mission:</strong> <span id="mission-nextMission"></span></p><br/>
+                    
+                    <div id="crews-section" class="mt-6">
+                        <h3 class="text-xl font-bold mb-2">Crew Members</h3>
+                        <ul id="mission-crews" class="list-disc list-inside"></ul>
                     </div>
-                    <h3 class="text-xl font-bold mb-2">Crew</h3>
-                    <ul id="crew-list" class="list-disc list-inside"></ul>
-                </div>
                 </div>
             </div>
         </div>
     </div>
-<script src="mission_detail.js"></script>
+    <script src="mission_detail.js"></script>
 </body>
+</html>

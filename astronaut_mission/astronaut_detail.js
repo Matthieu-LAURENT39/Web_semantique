@@ -113,7 +113,7 @@ function showDetailsAstronaut(result) {
             const missionName = missionUri.split("/").pop().replace(/_/g, " ");
             const listItem = document.createElement("li");
             const link = document.createElement("a");
-            link.href = `/astronaut_mission/mission_detail.html?uri=${encodeURIComponent(missionUri.trim())}`;
+            link.href = `mission_detail.html?name=${encodeURIComponent(missionName)}`;
             link.textContent = missionName;
             link.classList.add("text-cyan-400", "hover:underline");
             listItem.appendChild(link);

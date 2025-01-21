@@ -59,19 +59,16 @@ function buildDBPediaQuery(planetName) {
                 }
                 UNION
                 {
-                    ${encodedResource} ^dbp:satelliteOf ?satellite
-                }
-                UNION
-                {
                     ?satellite dbp:satelliteOf "${planetName}"@en
                 }
             }
 
-            # Retrieve parent celestial bodies of the planet (Fixed Virtuoso UNION issue)
+            # Retrieve parent celestial bodies of the planet
             OPTIONAL {
                 {
                     ${encodedResource} dbp:satelliteOf ?parentBody
                 }
+                # Both dbo:orbits and dbp:orbits are used
                 UNION
                 {
                     ${encodedResource} dbo:orbits ?parentBody

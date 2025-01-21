@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Details - Astronomical Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 50%;
+            background: linear-gradient(90deg, #22d3ee, #3b82f6);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        .nav-link:hover::after {
+            width: 80%;
+        }
+        .nav-link.active::after {
+            width: 80%;
+        }
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .star-property {
+            background: rgba(34, 211, 238, 0.1);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+        }
+        .temperature-scale {
+            background: linear-gradient(to right, #3b82f6, #ef4444);
+            height: 20px;
+            border-radius: 10px;
+            position: relative;
+        }
+        .temperature-marker {
+            position: absolute;
+            width: 4px;
+            height: 30px;
+            background: white;
+            transform: translateX(-50%);
+            top: -5px;
+        }
+        .comparison-table tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .comparison-table td {
+            padding: 1rem;
+        }
+        .star-chart {
+            max-width: 100%;
+            height: 300px;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Navigation Bar -->
+    <nav class="glass fixed top-0 w-full z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="index.html" class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                        Astronomical Explorer
+                    </a>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="index.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Home
+                    </a>
+                    <a href="constellations.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Constellations
+                    </a>
+                    <a href="star.html" class="nav-link active px-4 py-2 rounded-lg text-white">
+                        Stars
+                    </a>
+                    <a href="planet.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Planets
+                    </a>
+                    <a href="galaxy.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Galaxies
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="relative min-h-screen pt-20">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <!-- Star Header -->
+            <div class="glass rounded-2xl p-8 mb-8">
+                <div class="flex flex-col md:flex-row gap-8">
+                    <div class="md:w-1/3">
+                        <div id="starImage" class="w-full h-64 bg-cover bg-center rounded-xl"></div>
+                    </div>
+                    <div class="md:w-2/3">
+                        <h1 id="starName" class="text-4xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"></h1>
+                        <div id="starProperties" class="flex flex-wrap gap-3 mb-4"></div>
+                        <p id="starAbstract" class="text-gray-300 leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Information -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <!-- Temperature Analysis -->
+                <div class="glass rounded-2xl p-6">
+                    <h2 class="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                        Temperature Analysis
+                    </h2>
+                    <div id="temperatureChart" class="star-chart mb-4"></div>
+                    <div id="temperatureScale" class="mb-4">
+                        <div class="temperature-scale">
+                            <div id="tempMarker" class="temperature-marker"></div>
+                        </div>
+                        <div class="flex justify-between mt-2 text-sm text-gray-400">
+                            <span>3,000K</span>
+                            <span>10,000K</span>
+                            <span>20,000K</span>
+                            <span>30,000K</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison with Sun -->
+            <div class="glass rounded-2xl p-6 mb-8">
+                <h2 class="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                    Comparison with Sun
+                </h2>
+                <div class="overflow-x-auto">
+                    <table class="comparison-table w-full">
+                        <thead>
+                            <tr class="text-left">
+                                <th class="px-4 py-2">Property</th>
+                                <th class="px-4 py-2" id="starNameHeader"></th>
+                                <th class="px-4 py-2">Sun</th>
+                                <th class="px-4 py-2">Comparison</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparisonTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                    Additional Information
+                </h2>
+                <div id="additionalInfo" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Additional info will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DBPEDIA_ENDPOINT = 'https://dbpedia.org/sparql';
+
+        // Fonction pour formater les valeurs numériques
+        function formatValue(value) {
+            if (!value) return 'Not available';
+            
+            if (value.includes('E')) {
+                const [num, exp] = value.split('E');
+                return `${parseFloat(num).toFixed(2)} × 10<sup>${exp}</sup>`;
+            }
+            
+            const num = parseFloat(value);
+            if (Math.abs(num) >= 1e6 || Math.abs(num) <= 1e-6) {
+                return num.toExponential(2).replace('e', ' × 10<sup>') + '</sup>';
+            }
+            
+            return parseFloat(value).toLocaleString();
+        }
+
+        // Fonction pour obtenir les détails d'une étoile
+        async function getStarDetails(starName) {
+            const query = `
+                SELECT DISTINCT ?entity ?label ?abstract ?temperature ?luminosity ?mass ?radius ?spectralType ?age ?distance ?thumbnail WHERE {
+                    ?entity a dbo:Star ;
+                           rdfs:label ?label ;
+                           dbo:abstract ?abstract .
+                    OPTIONAL { ?entity dbo:temperature ?temperature }
+                    OPTIONAL { ?entity dbo:luminosity ?luminosity }
+                    OPTIONAL { ?entity dbo:mass ?mass }
+                    OPTIONAL { ?entity dbo:radius ?radius }
+                    OPTIONAL { ?entity dbo:spectralType ?spectralType }
+                    OPTIONAL { ?entity dbo:age ?age }
+                    OPTIONAL { ?entity dbo:distance ?distance }
+                    OPTIONAL { 
+                        {
+                            ?entity dbo:thumbnail ?thumbnail
+                        } UNION {
+                            ?entity foaf:depiction ?thumbnail
+                        } UNION {
+                            ?entity dbp:image ?thumbnail
+                        }
+                    }
+                    FILTER(LANG(?label) = 'en')
+                    FILTER(LANG(?abstract) = 'en')
+                    FILTER(?label = "${starName}"@en)
+                }
+                GROUP BY ?entity ?label ?abstract ?temperature ?luminosity ?mass ?radius ?spectralType ?age ?distance
+                LIMIT 1
+            `;
+
+            try {
+                const response = await fetch(`${DBPEDIA_ENDPOINT}?query=${encodeURIComponent(query)}&format=json`);
+                const data = await response.json();
+                return data.results.bindings[0];
+            } catch (error) {
+                console.error('Error fetching star details:', error);
+                return null;
+            }
+        }
+
+        // Fonction pour mettre à jour l'interface
+        function updateStarInterface(star) {
+            // Update basic information
+            document.getElementById('starName').textContent = star.label.value;
+            document.getElementById('starAbstract').innerHTML = star.abstract.value;
+            document.getElementById('starNameHeader').textContent = star.label.value;
+
+            // Update image
+            if (star.thumbnail) {
+                document.getElementById('starImage').style.backgroundImage = `url('${star.thumbnail.value}')`;
+            } else {
+                document.getElementById('starImage').innerHTML = `
+                    <div class="w-full h-full bg-gradient-to-br from-blue-900 to-black flex items-center justify-center">
+                        <svg class="w-24 h-24 text-blue-500 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                        </svg>
+                    </div>
+                `;
+            }
+
+            // Update properties
+            const properties = document.getElementById('starProperties');
+            properties.innerHTML = '';
+            
+            if (star.temperature) {
+                properties.innerHTML += `
+                    <div class="star-property px-3 py-1 rounded-full text-sm">
+                        Temperature: ${formatValue(star.temperature.value)}K
+                    </div>
+                `;
+            }
+            if (star.luminosity) {
+                properties.innerHTML += `
+                    <div class="star-property px-3 py-1 rounded-full text-sm">
+                        Luminosity: ${formatValue(star.luminosity.value)}L☉
+                    </div>
+                `;
+            }
+            if (star.mass) {
+                properties.innerHTML += `
+                    <div class="star-property px-3 py-1 rounded-full text-sm">
+                        Mass: ${formatValue(star.mass.value)}M☉
+                    </div>
+                `;
+            }
+            if (star.radius) {
+                properties.innerHTML += `
+                    <div class="star-property px-3 py-1 rounded-full text-sm">
+                        Radius: ${formatValue(star.radius.value)}R☉
+                    </div>
+                `;
+            }
+
+            // Update temperature visualization
+            if (star.temperature) {
+                const temp = parseFloat(star.temperature.value);
+                const position = Math.min(Math.max((temp - 3000) / 27000 * 100, 0), 100);
+                document.getElementById('tempMarker').style.left = `${position}%`;
+            }
+
+            // Update comparison table
+            const comparisonTable = document.getElementById('comparisonTable');
+            comparisonTable.innerHTML = `
+                <tr>
+                    <td>Temperature</td>
+                    <td>${star.temperature ? formatValue(star.temperature.value) + 'K' : 'N/A'}</td>
+                    <td>5778K</td>
+                    <td>${star.temperature ? (parseFloat(star.temperature.value) / 5778).toFixed(2) + '×' : 'N/A'}</td>
+                </tr>
+                <tr>
+                    <td>Luminosity</td>
+                    <td>${star.luminosity ? formatValue(star.luminosity.value) + 'L☉' : 'N/A'}</td>
+                    <td>1L☉</td>
+                    <td>${star.luminosity ? formatValue(star.luminosity.value) + '×' : 'N/A'}</td>
+                </tr>
+                <tr>
+                    <td>Mass</td>
+                    <td>${star.mass ? formatValue(star.mass.value) + 'M☉' : 'N/A'}</td>
+                    <td>1M☉</td>
+                    <td>${star.mass ? formatValue(star.mass.value) + '×' : 'N/A'}</td>
+                </tr>
+                <tr>
+                    <td>Radius</td>
+                    <td>${star.radius ? formatValue(star.radius.value) + 'R☉' : 'N/A'}</td>
+                    <td>1R☉</td>
+                    <td>${star.radius ? formatValue(star.radius.value) + '×' : 'N/A'}</td>
+                </tr>
+            `;
+
+            // Create temperature chart
+            if (star.temperature) {
+                const ctx = document.getElementById('temperatureChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['This Star', 'Sun'],
+                        datasets: [{
+                            label: 'Temperature (K)',
+                            data: [parseFloat(star.temperature.value), 5778],
+                            backgroundColor: ['rgba(34, 211, 238, 0.5)', 'rgba(59, 130, 246, 0.5)'],
+                            borderColor: ['rgb(34, 211, 238)', 'rgb(59, 130, 246)'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.7)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.7)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'rgba(255, 255, 255, 0.7)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Load star details when page loads
+        window.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const starName = urlParams.get('name');
+            
+            if (starName) {
+                const starDetails = await getStarDetails(starName);
+                if (starDetails) {
+                    updateStarInterface(starDetails);
+                } else {
+                    document.getElementById('starName').textContent = 'Star not found';
+                }
+            } else {
+                document.getElementById('starName').textContent = 'No star specified';
+            }
+        });
+    </script>
+</body>
+</html> 

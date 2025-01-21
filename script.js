@@ -522,7 +522,7 @@ function buildQuery(searchTerm, searchType) {
     
     if (searchType === 'all') {
         query = `
-            SELECT DISTINCT ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars (SAMPLE(?img) as ?thumbnail) WHERE {
+            SELECT DISTINCT ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars ?temperature ?luminosity WHERE {
                 {
                     ?entity a dbo:Planet ;
                            rdfs:label ?label ;
@@ -555,6 +555,15 @@ function buildQuery(searchTerm, searchType) {
                     OPTIONAL { ?entity dbo:area ?area }
                     OPTIONAL { ?entity dbp:stars ?stars }
                     OPTIONAL { ?entity dbo:thumbnail ?img }
+                }
+                UNION
+                {
+                    ?entity a dbo:Star ;
+                           rdfs:label ?label ;
+                           dbo:abstract ?abstract .
+                    BIND("star" AS ?type)
+                    OPTIONAL { ?entity dbo:temperature ?temperature }
+                    OPTIONAL { ?entity dbo:luminosity ?luminosity }
                 }
                 FILTER(LANG(?label) = 'en')
                 FILTER(LANG(?abstract) = 'en')
@@ -614,6 +623,22 @@ function buildQuery(searchTerm, searchType) {
                         OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
                         FILTER(LANG(?label) = 'en')
                         FILTER(LANG(?abstract) = 'en')
+                        FILTER(${createFlexibleFilter('?label')})
+                    }
+                    ORDER BY ASC(STRLEN(?label))
+                    LIMIT 15
+                `;
+                break;
+            case 'star':
+                query = `
+                    SELECT DISTINCT ?entity ?label ?abstract ?temperature ?luminosity WHERE {
+                        ?entity a dbo:Star ;
+                               rdfs:label ?label ;
+                               dbo:abstract ?abstract .
+                        OPTIONAL { ?entity dbo:temperature ?temperature }
+                        OPTIONAL { ?entity dbo:luminosity ?luminosity }
+                        FILTER(LANG(?label) = 'fr')
+                        FILTER(LANG(?abstract) = 'fr')
                         FILTER(${createFlexibleFilter('?label')})
                     }
                     ORDER BY ASC(STRLEN(?label))
@@ -737,6 +762,12 @@ function displayResults(results, searchType) {
                         </a>
                     ` : ''}
                 </div>
+            ` : ''}
+            <div class="info-card">
+                <h3 class="text-xl font-semibold mb-3 text-cyan-400">Source</h3>
+                <a href="${result.entity.value}" target="_blank" class="text-blue-400 hover:text-blue-300 transition-colors">
+                    Voir sur DBpedia
+                </a>
             </div>
         `;
         
@@ -789,12 +820,18 @@ function showDetails(index, result, type) {
 
 // Fonction pour obtenir le label du type en anglais
 function getTypeLabel(type) {
-    const types = {
-        'planet': 'Planet',
-        'galaxy': 'Galaxy',
-        'constellation': 'Constellation'
-    };
-    return types[type] || type;
+    switch(type) {
+        case 'planet':
+            return 'Planète';
+        case 'galaxy':
+            return 'Galaxie';
+        case 'constellation':
+            return 'Constellation';
+        case 'star':
+            return 'Étoile';
+        default:
+            return type;
+    }
 }
 
 // Permettre la recherche avec la touche Entrée

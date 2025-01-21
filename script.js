@@ -110,6 +110,14 @@ function buildQuery(searchTerm, searchType) {
                     BIND("mission" AS ?type)
                     OPTIONAL { ?entity dbo:thumbnail ?img }
                 }
+                UNION
+                {
+                    ?entity a dbo:Astronaut ;
+                           rdfs:label ?label ;
+                           dbo:abstract ?abstract .
+                    BIND("astronaut" AS ?type)
+                    OPTIONAL { ?entity dbo:thumbnail ?img }
+                }
                 FILTER(LANG(?label) = 'en')
                 FILTER(LANG(?abstract) = 'en')
                 FILTER(${createFlexibleFilter('?label')})
@@ -211,6 +219,21 @@ function buildQuery(searchTerm, searchType) {
                 query = `
                     SELECT DISTINCT ?entity ?label ?abstract ?thumbnail WHERE {
                         ?entity a dbo:SpaceMission ;
+                               rdfs:label ?label ;
+                               dbo:abstract ?abstract .
+                        OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
+                        FILTER(LANG(?label) = 'en')
+                        FILTER(LANG(?abstract) = 'en')
+                        FILTER(${createFlexibleFilter('?label')})
+                    }
+                    ORDER BY ASC(STRLEN(?label))
+                    LIMIT 10
+                `;
+                break;
+            case 'astronaut':
+                query = `
+                    SELECT DISTINCT ?entity ?label ?abstract ?thumbnail WHERE {
+                        ?entity a dbo:Astronaut ;
                                rdfs:label ?label ;
                                dbo:abstract ?abstract .
                         OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
@@ -329,6 +352,8 @@ function displayResults(results, searchType) {
             link = `details.html?name=${encodeURIComponent(name)}`;
         } else if (type === 'mission') {
             link = `astronaut_mission/mission_detail.html?name=${encodeURIComponent(name)}`;
+        } else if (type === 'astronaut') {
+            link = `astronaut_mission/astronaut_detail.html?name=${encodeURIComponent(name)}`;
         }
 
         card.innerHTML = `
@@ -349,7 +374,7 @@ function displayResults(results, searchType) {
                             View details
                         </a>
                     ` :
-                (type === 'galaxy' || type === 'star' || type === 'constellation' || type === 'blackhole' || type === 'mission' ? `
+                (type === 'galaxy' || type === 'star' || type === 'constellation' || type === 'blackhole' || type === 'mission' || type === 'astronaut' ? `
                         <a href="${link}" class="inline-block bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
                             View details
                         </a>

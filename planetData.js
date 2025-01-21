@@ -1,4 +1,4 @@
-// Constants and configurations
+// ========== Constants and config ==========
 const LANGUAGE_INFO = {
     'en': { name: 'English', emoji: '🇬🇧' },
     'fr': { name: 'Français', emoji: '🇫🇷' },
@@ -11,7 +11,7 @@ const LANGUAGE_INFO = {
 const DBPEDIA_ENDPOINT = 'https://dbpedia.org/sparql';
 const WIKIDATA_ENDPOINT = 'https://query.wikidata.org/sparql';
 
-// Utility functions
+// ========== Utility functions ==========
 function kelvinToCelsius(k) {
     return k !== null ? (k - 273.15).toFixed(2) : null;
 }
@@ -23,7 +23,7 @@ function tempToPercent(temp) {
     return Math.max(0, Math.min(100, ((temp - minTemp) / (maxTemp - minTemp)) * 100));
 }
 
-// Query builders
+// ========== Query builders ==========
 function buildDBPediaQuery(planetName) {
     // Properly encode the DBpedia resource URI
     const encodedResource = `<http://dbpedia.org/resource/${planetName}>`;
@@ -89,8 +89,12 @@ function buildAtmosphereQuery(wikidataId) {
                ?radius ?radiusUnit ?radiusUnitLabel ?appliesTo ?appliesToLabel
         WHERE {
             OPTIONAL {
+                # instance of (P31)
+                # part of (P361) 
                 ?atmosphere p:P31 ?statement0;
                            p:P361 ?statement1.
+                # atmosphere of a planet (Q19704068)
+                # subclass of (P279), allow for multiple levels of subclassing
                 ?statement0 (ps:P31/(wdt:P279*)) wd:Q19704068.
                 ?statement1 (ps:P361/(wdt:P279*)) wd:${wikidataId}.
                 
@@ -144,7 +148,7 @@ function buildRadiusQuery(wikidataId) {
     `;
 }
 
-// Data fetching functions
+// ========== Data fetching functions ==========
 async function fetchSPARQLData(endpoint, query, headers = {}) {
     const url = `${endpoint}?query=${encodeURIComponent(query)}&format=json`;
     const response = await fetch(url, { headers });
@@ -249,7 +253,7 @@ async function fetchAndDisplayRadiusInfo(wikidataId, targetPrefix) {
     }
 }
 
-// Data processing functions
+// ========== Data processing functions ==========
 function processDBPediaResults(results, planetName, targetPrefix) {
     const processedData = {
         abstract: results.abstract?.value || "No description available.",
@@ -290,7 +294,7 @@ function processSatellites(satellitesString) {
         .filter(name => name.trim() !== '');
 }
 
-// Display functions
+// ========== Display functions ==========
 function displayLanguageLabels(labels) {
     if (labels.length === 0) return;
 
@@ -566,7 +570,7 @@ function displayRadiusData(results, targetPrefix) {
     }
 }
 
-// Display functions for comparison table
+// ========== Display functions for comparison table ==========
 function updateComparisonTable() {
     if (!window.planetData || !window.earthData) return;
 

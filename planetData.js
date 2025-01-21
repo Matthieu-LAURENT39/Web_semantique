@@ -408,6 +408,7 @@ function generateAtmosphereHTML(atmosphereResults) {
 function generateAtmosphereBarSegments(results) {
     // Create a Set to track unique materials
     const seen = new Set();
+    let currentLeft = 0;
 
     return results
         .filter(r => r.proportion)
@@ -421,14 +422,8 @@ function generateAtmosphereBarSegments(results) {
         .map((r, index) => {
             const percentage = parseFloat(r.proportion.value) * 100;
             const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-purple-500', 'bg-indigo-500'];
-            const left = index === 0 ? 0 : results
-                .filter(r => r.proportion)
-                .filter(r => {
-                    const material = r.materialLabel?.value;
-                    return material && !seen.has(material);
-                })
-                .slice(0, index)
-                .reduce((acc, r) => acc + parseFloat(r.proportion.value) * 100, 0);
+            const left = currentLeft;
+            currentLeft += percentage;
 
             return `
                 <div class="${colors[index % colors.length]} h-full absolute"

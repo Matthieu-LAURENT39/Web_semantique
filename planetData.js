@@ -611,7 +611,7 @@ function updateComparisonTable() {
             <tr class="border-b hover:bg-gray-50">
                 <td class="px-4 py-2 font-medium">${prop.label} (${prop.unit})</td>
                 <td class="px-4 py-2">${planetValue !== null ? planetValue : '<span class="text-gray-600 italic">Data missing</span>'}</td>
-                <td class="px-4 py-2">${isEarth ? 'Same as selected planet' :
+                <td class="px-4 py-2">${isEarth ? 'Selected plannet is already earth' :
                 (earthValue !== null ? earthValue : '<span class="text-gray-600 italic">Data missing</span>')}</td>
             </tr>
         `;

@@ -41,12 +41,12 @@ function levenshteinDistance(a, b) {
 // Fonction pour construire la requête SPARQL en fonction du type
 function buildQuery(searchTerm, searchType) {
     const term = searchTerm.toLowerCase();
-    
+
     // Fonction helper pour créer un filtre de recherche plus flexible
     const createFlexibleFilter = (variable) => {
         return `(CONTAINS(LCASE(${variable}), "${term}"))`;
     };
-    
+
     if (searchType === 'all') {
         query = `
             SELECT DISTINCT ?entity ?label ?abstract ?type ?mass ?radius ?area ?stars (SAMPLE(?img) as ?thumbnail) WHERE {
@@ -92,7 +92,7 @@ function buildQuery(searchTerm, searchType) {
             LIMIT 30
         `;
     } else {
-        switch(searchType) {
+        switch (searchType) {
             case 'planet':
                 query = `
                     SELECT DISTINCT ?entity ?label ?abstract ?mass ?radius (SAMPLE(?img) as ?thumbnail) WHERE {
@@ -149,7 +149,7 @@ function buildQuery(searchTerm, searchType) {
                 break;
         }
     }
-    
+
     return encodeURIComponent(query);
 }
 
@@ -158,20 +158,20 @@ function calculateRelevanceScore(searchTerm, label, abstract = '') {
     const cleanSearchTerm = cleanText(searchTerm.toLowerCase());
     const cleanLabel = cleanText(label.toLowerCase());
     const cleanAbstract = cleanText(abstract.toLowerCase());
-    
+
     // Distance de Levenshtein normalisée (0 à 1, où 1 est une correspondance parfaite)
     const maxLength = Math.max(cleanSearchTerm.length, cleanLabel.length);
     const levenScore = 1 - (levenshteinDistance(cleanSearchTerm, cleanLabel) / maxLength);
-    
+
     // Bonus pour les correspondances exactes
     const exactMatchBonus = cleanLabel.includes(cleanSearchTerm) ? 0.3 : 0;
-    
+
     // Bonus pour les correspondances au début
     const startsWithBonus = cleanLabel.startsWith(cleanSearchTerm) ? 0.2 : 0;
-    
+
     // Bonus pour les correspondances dans la description
     const abstractBonus = cleanAbstract.includes(cleanSearchTerm) ? 0.1 : 0;
-    
+
     return levenScore + exactMatchBonus + startsWithBonus + abstractBonus;
 }
 
@@ -189,26 +189,26 @@ async function search() {
     const searchInput = document.getElementById('searchInput');
     const searchType = document.getElementById('searchType');
     const resultsDiv = document.getElementById('results');
-    
+
     if (!searchInput.value.trim()) {
         resultsDiv.innerHTML = '<p>Veuillez entrer un terme de recherche</p>';
         return;
     }
-    
+
     resultsDiv.innerHTML = '<p>Recherche en cours...</p>';
-    
+
     const query = buildQuery(searchInput.value.trim(), searchType.value);
     const url = `${DBPEDIA_ENDPOINT}?query=${query}&format=json`;
-    
+
     try {
         const response = await fetch(url, {
             headers: {
                 'Accept': 'application/sparql-results+json'
             }
         });
-        
+
         if (!response.ok) throw new Error('Erreur réseau');
-        
+
         const data = await response.json();
         const sortedResults = sortResultsByRelevance(data.results.bindings, searchInput.value.trim());
         displayResults(sortedResults, searchType.value);
@@ -220,7 +220,7 @@ async function search() {
 // Fonction pour afficher les résultats
 function displayResults(results, searchType) {
     const resultsDiv = document.getElementById('results');
-    
+
     if (!results || results.length === 0) {
         resultsDiv.innerHTML = `
             <div class="glass rounded-xl p-6 text-center">
@@ -228,26 +228,26 @@ function displayResults(results, searchType) {
             </div>`;
         return;
     }
-    
+
     resultsDiv.innerHTML = '';
     results.forEach(result => {
         const card = document.createElement('div');
         card.className = 'glass rounded-xl p-6 hover:bg-white/5 transition-all duration-300';
-        
+
         const type = result.type?.value || searchType;
         const name = result.label?.value || 'Unnamed';
         const abstract = result.abstract?.value || 'No description available';
         const image = result.thumbnail?.value || null;
-        
+
         let link = '#';
         if (type === 'planet') {
             const planetName = name.split(' ')[0]; // On prend le premier mot du nom (ex: "Mars" dans "Mars (planet)")
-            link = `planet.html?planetName=${planetName}`;
-        } else if(type === 'galaxy') {
+            link = `planet_details.html?planetName=${planetName}`;
+        } else if (type === 'galaxy') {
             const galaxyName = name.split(' ')[0]; // On prend le premier mot du nom (ex: "Mars" dans "Mars (planet)")
             link = `galaxy-details.html?galaxyName=${name}`;
         }
-        
+
         card.innerHTML = `
             <div class="flex flex-col md:flex-row gap-6">
                 ${image ? `
@@ -265,8 +265,8 @@ function displayResults(results, searchType) {
                         <a href="${link}" class="inline-block bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
                             View details
                         </a>
-                    ` : 
-                    (type === 'galaxy' ? `
+                    ` :
+                (type === 'galaxy' ? `
                         <a href="${link}" class="inline-block bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
                             View details
                         </a>
@@ -274,7 +274,7 @@ function displayResults(results, searchType) {
                 </div>
             </div>
         `;
-        
+
         resultsDiv.appendChild(card);
     });
 }
@@ -284,18 +284,18 @@ function showDetails(index, result, type) {
     const modal = document.getElementById('detailModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalContent = document.getElementById('modalContent');
-    
+
     const label = cleanText(result.label?.value || 'Sans nom');
     const abstract = result.abstract?.value || 'Pas de description disponible';
-    
+
     modalTitle.textContent = label;
-    
+
     let content = `
         <div id="modalImage" class="w-full flex justify-center mb-6">
-            ${result.thumbnail?.value ? 
-                `<img src="${result.thumbnail.value}" alt="${label}" 
-                     class="rounded-lg max-h-[300px] object-cover shadow-lg" />` 
-                : ''}
+            ${result.thumbnail?.value ?
+            `<img src="${result.thumbnail.value}" alt="${label}" 
+                     class="rounded-lg max-h-[300px] object-cover shadow-lg" />`
+            : ''}
         </div>
         <div class="space-y-6">
             <div class="info-card">
@@ -354,7 +354,7 @@ function showDetails(index, result, type) {
             </div>
         `;
     }
-    
+
     content += `
             <div class="info-card mt-6">
                 <p class="text-sm text-gray-400">
@@ -365,7 +365,7 @@ function showDetails(index, result, type) {
             </div>
         </div>
     `;
-    
+
     modalContent.innerHTML = content;
     modal.classList.add('active');
 
@@ -379,24 +379,24 @@ function showDetails(index, result, type) {
 function closeModal() {
     const modal = document.getElementById('detailModal');
     const modalContent = modal.querySelector('.modal-content');
-    
+
     modalContent.style.opacity = '0';
     modalContent.style.transform = 'scale(0.95)';
-    
+
     setTimeout(() => {
         modal.classList.remove('active');
     }, 300);
 }
 
 // Fermer le modal en cliquant en dehors
-document.getElementById('detailModal').addEventListener('click', function(e) {
+document.getElementById('detailModal').addEventListener('click', function (e) {
     if (e.target === this) {
         closeModal();
     }
 });
 
 // Fermer le modal avec la touche Echap
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         closeModal();
     }
@@ -413,7 +413,7 @@ function getTypeLabel(type) {
 }
 
 // Permettre la recherche avec la touche Entrée
-document.getElementById('searchInput').addEventListener('keypress', function(e) {
+document.getElementById('searchInput').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
         search();
     }
@@ -422,13 +422,13 @@ document.getElementById('searchInput').addEventListener('keypress', function(e) 
 // Fonction pour formater les valeurs numériques
 function formatValue(value) {
     if (!value) return 'Not available';
-    
+
     // Si c'est un nombre scientifique
     if (value.includes('E')) {
         const [num, exp] = value.split('E');
         return `${parseFloat(num).toFixed(2)} × 10<sup>${exp}</sup>`;
     }
-    
+
     return value;
 }
 
@@ -439,8 +439,8 @@ function createConstellationCard(constellation) {
     card.onclick = () => window.location.href = `constellation.html?name=${encodeURIComponent(constellation.name)}`;
 
     // Créer le contenu de la carte
-    const imageStyle = constellation.image ? 
-        `background-image: url('${constellation.image}'); height: 200px;` : 
+    const imageStyle = constellation.image ?
+        `background-image: url('${constellation.image}'); height: 200px;` :
         'height: 0;';
 
     card.innerHTML = `

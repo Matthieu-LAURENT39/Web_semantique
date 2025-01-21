@@ -220,8 +220,11 @@ function displayResults(results, searchType) {
 
 // Fonction pour fetch les détails d'une entité
 function loadDetails(entityURI, type) {
+    const entityName = entityURI.split("/").pop().replace(/_/g, " ");
     const baseUrl = type === "astronaut" ? "./astronaut_detail.html" : "./mission_detail.html";   
-    const url = `${baseUrl}?uri=${encodeURIComponent(entityURI)}`; 
+    const paramName = type === "astronaut" ? "uri" : "name";
+    const paramValue = type === "astronaut" ? encodeURIComponent(entityURI) : encodeURIComponent(entityName);
+    const url = `${baseUrl}?${paramName}=${paramValue}`; 
     window.location.href = url;
 }
 

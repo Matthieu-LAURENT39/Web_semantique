@@ -7,10 +7,86 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 50%;
+            background: linear-gradient(90deg, #22d3ee, #3b82f6);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        .nav-link:hover::after {
+            width: 80%;
+        }
+        .nav-link.active::after {
+            width: 80%;
+        }
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .active {
+            color: white;
+        }
+    </style>
 </head>
-<body class="min-h-screen bg-gray-50">
-    <div class="relative min-h-screen flex items-start justify-center p-4">
-        <div class="content-container w-full max-w-6xl shadow-lg rounded-lg p-6">
+<body class="min-h-screen">
+    <!-- Navigation Bar -->
+    <nav class="glass fixed top-0 w-full z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="../index.html" class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                        Astronomical Explorer
+                    </a>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="../index.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Home
+                    </a>
+                    <a href="../constellations.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Constellations
+                    </a>
+                    <a href="../star.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Stars
+                    </a>
+                    <a href="../blackholes.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Black Holes
+                    </a>
+                    <a href="../planet.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Planets
+                    </a>
+                    <a href="../galaxy.html" class="nav-link px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+                        Galaxies
+                    </a>
+                    <a href="./astronaut_mission_main.html" class="nav-link active px-4 py-2 rounded-lg text-white">
+                        Astronaut
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="relative min-h-screen flex items-start justify-center p-4 pt-20">
+        <div class="content-container w-full max-w-6xl shadow-lg rounded-lg p-6 glass">
             <!-- Titre principal -->
             <header class="text-center mb-8">
                 <h1 class="text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
@@ -24,9 +100,9 @@
                 <div class="col-span-1">
                     <div class="text-center mb-4">
                         <img id="mission-img" src="" alt="Mission Image" class="w-full h-auto object-cover rounded-lg shadow-md">
-                        <h1 id="mission-label" class="text-2xl font-semibold mt-4 bg-gradient-to-r from-cyan-400 to-blue-500"></h1>
+                        <h1 id="mission-label" class="text-2xl font-semibold mt-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"></h1>
                     </div>
-                    <div class="space-y-4">
+                    <div class="space-y-4 text-white">
                         <div>
                             <h3 class="font-bold">Launch Date:</h3>
                             <p id="mission-launch-date"></p>
@@ -47,7 +123,7 @@
                 </div>
 
                 <!-- Colonne droite (2/3) -->
-                <div class="col-span-2">
+                <div class="col-span-2 text-white">
                     <div class="mb-6">
                         <h3 class="font-bold">Description:</h3>
                         <p id="mission-description"></p>

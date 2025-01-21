@@ -102,6 +102,14 @@ function buildQuery(searchTerm, searchType) {
                     OPTIONAL { ?entity dbo:mass ?mass }
                     OPTIONAL { ?entity dbo:thumbnail ?img }
                 }
+                UNION
+                {
+                    ?entity a dbo:SpaceMission ;
+                           rdfs:label ?label ;
+                           dbo:abstract ?abstract .
+                    BIND("mission" AS ?type)
+                    OPTIONAL { ?entity dbo:thumbnail ?img }
+                }
                 FILTER(LANG(?label) = 'en')
                 FILTER(LANG(?abstract) = 'en')
                 FILTER(${createFlexibleFilter('?label')})
@@ -190,6 +198,21 @@ function buildQuery(searchTerm, searchType) {
                                rdfs:label ?label ;
                                dbo:abstract ?abstract .
                         OPTIONAL { ?entity dbo:mass ?mass }
+                        OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
+                        FILTER(LANG(?label) = 'en')
+                        FILTER(LANG(?abstract) = 'en')
+                        FILTER(${createFlexibleFilter('?label')})
+                    }
+                    ORDER BY ASC(STRLEN(?label))
+                    LIMIT 10
+                `;
+                break;
+            case 'mission':
+                query = `
+                    SELECT DISTINCT ?entity ?label ?abstract ?thumbnail WHERE {
+                        ?entity a dbo:SpaceMission ;
+                               rdfs:label ?label ;
+                               dbo:abstract ?abstract .
                         OPTIONAL { ?entity dbo:thumbnail ?thumbnail }
                         FILTER(LANG(?label) = 'en')
                         FILTER(LANG(?abstract) = 'en')
@@ -304,6 +327,8 @@ function displayResults(results, searchType) {
             link = `constellation-details.html?name=${encodeURIComponent(name)}`;
         } else if (type === 'blackhole') {
             link = `details.html?name=${encodeURIComponent(name)}`;
+        } else if (type === 'mission') {
+            link = `astronaut_mission/mission_detail.html?name=${encodeURIComponent(name)}`;
         }
 
         card.innerHTML = `
@@ -324,7 +349,7 @@ function displayResults(results, searchType) {
                             View details
                         </a>
                     ` :
-                (type === 'galaxy' || type === 'star' || type === 'constellation' || type === 'blackhole' ? `
+                (type === 'galaxy' || type === 'star' || type === 'constellation' || type === 'blackhole' || type === 'mission' ? `
                         <a href="${link}" class="inline-block bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
                             View details
                         </a>

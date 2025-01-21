@@ -262,7 +262,7 @@ function formatConstellationDetails(constellation) {
         });
 
         // Initialize stars section after the sections are added to the DOM
-        setTimeout(() => updateStarsSection(constellation), 0);
+        setTimeout(() => initializeStarsSection(constellation), 0);
     }
 
     // Galaxies in the Constellation
@@ -324,12 +324,10 @@ function formatConstellationBadges(constellation) {
 // Add pagination state for stars
 let currentStarsPage = 1;
 const starsPerPage = 12;
+let totalStarsCount = 0;
 
-// Function to fetch stars for a constellation with pagination
-async function fetchStarsForConstellation(constellationName, page) {
-    const offset = (page - 1) * starsPerPage;
-    
-    // First, get total count
+// Function to get total stars count
+async function getTotalStarsCount(constellationName) {
     const countQuery = `
         PREFIX dbo: <http://dbpedia.org/ontology/>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -348,7 +346,23 @@ async function fetchStarsForConstellation(constellationName, page) {
         }
     `;
 
-    // Then, get paginated stars
+    try {
+        const countUrl = `https://dbpedia.org/sparql?query=${encodeURIComponent(countQuery)}&format=json`;
+        const countResponse = await fetch(countUrl, {
+            headers: { 'Accept': 'application/sparql-results+json' }
+        });
+        const countData = await countResponse.json();
+        return parseInt(countData.results.bindings[0].count.value);
+    } catch (error) {
+        console.error('Error fetching total stars count:', error);
+        throw error;
+    }
+}
+
+// Function to fetch stars for a constellation with pagination
+async function fetchStarsForConstellation(constellationName, page) {
+    const offset = (page - 1) * starsPerPage;
+    
     const starsQuery = `
         PREFIX dbo: <http://dbpedia.org/ontology/>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -371,15 +385,6 @@ async function fetchStarsForConstellation(constellationName, page) {
     `;
 
     try {
-        // Get total count
-        const countUrl = `https://dbpedia.org/sparql?query=${encodeURIComponent(countQuery)}&format=json`;
-        const countResponse = await fetch(countUrl, {
-            headers: { 'Accept': 'application/sparql-results+json' }
-        });
-        const countData = await countResponse.json();
-        const totalCount = parseInt(countData.results.bindings[0].count.value);
-
-        // Get stars for current page
         const starsUrl = `https://dbpedia.org/sparql?query=${encodeURIComponent(starsQuery)}&format=json`;
         const starsResponse = await fetch(starsUrl, {
             headers: { 'Accept': 'application/sparql-results+json' }
@@ -388,11 +393,31 @@ async function fetchStarsForConstellation(constellationName, page) {
 
         return {
             stars: starsData.results.bindings,
-            totalCount: totalCount
+            totalCount: totalStarsCount
         };
     } catch (error) {
         console.error('Error fetching stars:', error);
         throw error;
+    }
+}
+
+// Function to initialize stars section
+async function initializeStarsSection(constellation) {
+    try {
+        // Get the constellation name
+        let constellationName = constellation.name;
+        if (!constellationName) {
+            const urlParams = new URLSearchParams(window.location.search);
+            constellationName = urlParams.get('name');
+        }
+
+        // Get total count once
+        totalStarsCount = await getTotalStarsCount(constellationName);
+        
+        // Initialize first page
+        await updateStarsSection(constellation);
+    } catch (error) {
+        console.error('Error initializing stars section:', error);
     }
 }
 
@@ -408,9 +433,9 @@ function createStarsPaginationControls(totalStars, constellationName) {
     prevButton.textContent = 'Previous';
     prevButton.disabled = currentStarsPage === 1;
     prevButton.onclick = async () => {
+        console.log("Previous stars button clicked");
         if (currentStarsPage > 1) {
             currentStarsPage--;
-            console.log('Fetching previous page:', currentStarsPage);
             await updateStarsSection({ name: constellationName });
         }
     };
@@ -421,9 +446,9 @@ function createStarsPaginationControls(totalStars, constellationName) {
     nextButton.textContent = 'Next';
     nextButton.disabled = currentStarsPage >= totalPages;
     nextButton.onclick = async () => {
+        console.log("Next stars button clicked");
         if (currentStarsPage < totalPages) {
             currentStarsPage++;
-            console.log('Fetching next page:', currentStarsPage);
             await updateStarsSection({ name: constellationName });
         }
     };
@@ -457,7 +482,7 @@ async function updateStarsSection(constellation) {
             constellationName = urlParams.get('name');
         }
         
-        const { stars, totalCount } = await fetchStarsForConstellation(constellationName, currentStarsPage);
+        const { stars } = await fetchStarsForConstellation(constellationName, currentStarsPage);
         if (stars.length === 0) {
             starsSection.innerHTML = '<p class="text-gray-400 text-center">No stars found</p>';
             return;
@@ -490,33 +515,9 @@ async function updateStarsSection(constellation) {
         starsSection.appendChild(contentContainer);
 
         // Add pagination if needed
-        if (totalCount > starsPerPage) {
-            const paginationContainer = createStarsPaginationControls(totalCount, constellationName);
+        if (totalStarsCount > starsPerPage) {
+            const paginationContainer = createStarsPaginationControls(totalStarsCount, constellationName);
             starsSection.appendChild(paginationContainer);
-
-            // Add event listeners after the pagination controls are added to the DOM
-            const nextButton = paginationContainer.querySelector('button:nth-child(3)');
-            const prevButton = paginationContainer.querySelector('button:nth-child(1)');
-
-            if (nextButton) {
-                nextButton.onclick = async () => {
-                    console.log("Next button clicked");
-                    if (currentStarsPage < Math.ceil(totalCount / starsPerPage)) {
-                        currentStarsPage++;
-                        await updateStarsSection({ name: constellationName });
-                    }
-                };
-            }
-
-            if (prevButton) {
-                prevButton.onclick = async () => {
-                    console.log("Previous button clicked");
-                    if (currentStarsPage > 1) {
-                        currentStarsPage--;
-                        await updateStarsSection({ name: constellationName });
-                    }
-                };
-            }
         }
     } catch (error) {
         console.error('Error fetching stars:', error);

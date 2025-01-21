@@ -220,14 +220,9 @@ function displayResults(results, searchType) {
 
 // Fonction pour fetch les détails d'une entité
 function loadDetails(entityURI, type) {
-    const baseUrl = type === "astronaut" ? "astronaut_detail.html" : "mission_detail.html";   
+    const baseUrl = type === "astronaut" ? "./astronaut_detail.html" : "./mission_detail.html";   
     const url = `${baseUrl}?uri=${encodeURIComponent(entityURI)}`; 
-    if (type == "astronaut"){
-        window.location.href = url;
-    }
-    else {
-        window.location.href = url;
-    }
+    window.location.href = url;
 }
 
 

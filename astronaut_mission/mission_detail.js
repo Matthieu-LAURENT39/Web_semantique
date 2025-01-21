@@ -48,6 +48,7 @@ async function loadMissionDetails() {
         if (result) {
             showDetailsMission(result);
         } else {
+            showNoDetailsFound();
             console.error("No details found for the mission.");
         }
     } catch (error) {
@@ -153,6 +154,17 @@ function showDetailsMission(result) {
     }
 }
 
+function showNoDetailsFound() {
+    document.getElementById("mission-label").textContent = "No Information Available";
+    document.getElementById("mission-img").src = "default-mission.svg";
+    document.getElementById("mission-img").alt = "No Image Available";
+
+     // Mise à jour des détails
+     document.getElementById("mission-info").textContent.style.display = 'none';
+     document.getElementById("mission-details").textContent.style.display = 'none'
+     document.getElementById("mission-relations").textContent.style.display = 'none'
+    
+}
 
 
 loadMissionDetails();

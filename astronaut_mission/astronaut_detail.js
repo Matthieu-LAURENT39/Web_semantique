@@ -55,6 +55,7 @@ async function loadAstronautDetails() {
         if (result) {
             showDetailsAstronaut(result);
         } else {
+            showNoDetailsFound();
             console.error("No details found for the astronaut.");
         }
     } catch (error) {
@@ -123,5 +124,26 @@ function showDetailsAstronaut(result) {
     }
 
 }
+
+
+function showNoDetailsFound() {
+    document.getElementById("astronaut-label").textContent = "No Information Available";
+    document.getElementById("astronaut-img").src = "default-astronaut.svg";
+    document.getElementById("astronaut-img").alt = "No Image Available";
+
+     // Mise à jour des détails
+     document.getElementById("astronaut-description").textContent.style.display = 'none';
+     document.getElementById("astronaut-nationality").textContent.style.display = 'none'
+     document.getElementById("astronaut-birthplace").textContent.style.display = 'none'
+     document.getElementById("astronaut-birthdate").textContent.style.display = 'none'
+     document.getElementById("astronaut-status").textContent.style.display = 'none'
+     document.getElementById("astronaut-type").textContent.style.display = 'none'
+     
+ 
+     document.getElementById("astronaut-missions").style.display = 'none';
+     document.getElementById("missions-section").style.display = 'none';
+    
+}
+
 
 loadAstronautDetails();

@@ -54,86 +54,6 @@
         .active {
             color: white;
         }
-
-        .planet-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .planet-card:hover {
-            background: rgba(255, 255, 255, 0.08);
-            transform: translateY(-2px);
-        }
-
-        .language-selector {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-        }
-
-        .language-selector option {
-            background: #1e293b;
-            color: white;
-            padding: 0.5rem;
-        }
-
-        .temperature-bar {
-            position: relative;
-            width: 100%;
-            height: 20px;
-            background: linear-gradient(to right, #3b82f6, #ef4444);
-            border-radius: 10px;
-            margin: 2rem 0;
-        }
-
-        .temp-marker {
-            position: absolute;
-            top: -5px;
-            width: 4px;
-            height: 30px;
-            background: white;
-            border-radius: 2px;
-            transform: translateX(-50%);
-        }
-
-        .temp-scale {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 0.5rem;
-            color: #94a3b8;
-        }
-
-        .comparison-table tr {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .comparison-table td {
-            padding: 1rem;
-            color: #94a3b8;
-        }
-
-        .comparison-table td:first-child {
-            font-weight: 500;
-            color: white;
-        }
-
-        select,
-        input {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-        }
-
-        select option {
-            background: #1e293b;
-            color: white;
-            padding: 0.5rem;
-        }
     </style>
 </head>
 
@@ -169,266 +89,208 @@
         </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto pt-20 p-4">
-        <!-- Planet Navigation -->
-        <nav class="glass rounded-xl p-4 mb-6">
-            <ul class="flex flex-wrap justify-center gap-6">
-                <li>
-                    <a href="?planetName=Mercury_(planet)"
-                        class="text-gray-300 hover:text-white transition-colors">Mercury</a>
-                </li>
-                <li>
-                    <a href="?planetName=Venus" class="text-gray-300 hover:text-white transition-colors">Venus</a>
-                </li>
-                <li>
-                    <a href="?planetName=Earth" class="text-gray-300 hover:text-white transition-colors">Earth</a>
-                </li>
-                <li>
-                    <a href="?planetName=Mars" class="text-gray-300 hover:text-white transition-colors">Mars</a>
-                </li>
-                <li>
-                    <a href="?planetName=Jupiter" class="text-gray-300 hover:text-white transition-colors">Jupiter</a>
-                </li>
-                <li>
-                    <a href="?planetName=Saturn" class="text-gray-300 hover:text-white transition-colors">Saturn</a>
-                </li>
-                <li>
-                    <a href="?planetName=Uranus" class="text-gray-300 hover:text-white transition-colors">Uranus</a>
-                </li>
-                <li>
-                    <a href="?planetName=Neptune" class="text-gray-300 hover:text-white transition-colors">Neptune</a>
-                </li>
-            </ul>
-        </nav>
+    <div class="relative min-h-screen flex items-start justify-center p-4">
+        <div class="content-container w-full max-w-3xl">
+            <nav class="flex justify-between items-center mb-8 pt-4">
+                <a href="index.html" class="nav-link text-gray-400 hover:text-white">
+                    ← Back to Explorer
+                </a>
+            </nav>
 
-        <div class="glass rounded-xl p-6 mb-6">
-            <h1
-                class="text-3xl font-bold text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                Planet Information</h1>
-            <h2 class="text-2xl font-bold text-center mb-4 text-white" id="planet-name"></h2>
-            <div id="planet-abstract-info" class="mb-4 text-gray-300"></div>
-        </div>
+            <header class="text-center mb-8">
+                <h1
+                    class="text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                    Planet Explorer
+                </h1>
+                <p class="text-gray-400">Discover planets and their characteristics</p>
+            </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <!-- Selected Planet Temperature -->
-            <div class="glass rounded-xl p-6">
-                <h3 class="text-xl font-bold text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"
-                    id="planet-temp-title"></h3>
-                <div id="planet-temperature-info"></div>
+            <!-- Quick Access -->
+            <div class="glass rounded-xl p-4 mb-6">
+                <h2
+                    class="text-xl font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                    Solar System Planets
+                </h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <a href="planet_details.html?planetName=Mercury_(planet)"
+                        class="glass p-4 rounded-lg hover:bg-white/[0.15] transition-all text-center">
+                        <div class="text-lg font-medium">Mercury</div>
+                        <div class="text-sm text-gray-400">First Planet</div>
+                    </a>
+                    <a href="planet_details.html?planetName=Venus"
+                        class="glass p-4 rounded-lg hover:bg-white/[0.15] transition-all text-center">
+                        <div class="text-lg font-medium">Venus</div>
+                        <div class="text-sm text-gray-400">Second Planet</div>
+                    </a>
+                    <a href="planet_details.html?planetName=Earth"
+                        class="glass p-4 rounded-lg hover:bg-white/[0.15] transition-all text-center">
+                        <div class="text-lg font-medium">Earth</div>
+                        <div class="text-sm text-gray-400">Third Planet</div>
+                    </a>
+                    <a href="planet_details.html?planetName=Mars"
+                        class="glass p-4 rounded-lg hover:bg-white/[0.15] transition-all text-center">
+                        <div class="text-lg font-medium">Mars</div>
+                        <div class="text-sm text-gray-400">Fourth Planet</div>
+                    </a>
+                    <a href="planet_details.html?planetName=Jupiter"
+                        class="glass p-4 rounded-lg hover:bg-white/[0.15] transition-all text-center">
+                        <div class="text-lg font-medium">Jupiter</div>
+                        <div class="text-sm text-gray-400">Fifth Planet</div>
+                    </a>
+                    <a href="planet_details.html?planetName=Saturn"
+                        class="glass p-4 rounded-lg hover:bg-white/[0.15] transition-all text-center">
+                        <div class="text-lg font-medium">Saturn</div>
+                        <div class="text-sm text-gray-400">Sixth Planet</div>
+                    </a>
+                    <a href="planet_details.html?planetName=Uranus"
+                        class="glass p-4 rounded-lg hover:bg-white/[0.15] transition-all text-center">
+                        <div class="text-lg font-medium">Uranus</div>
+                        <div class="text-sm text-gray-400">Seventh Planet</div>
+                    </a>
+                    <a href="planet_details.html?planetName=Neptune"
+                        class="glass p-4 rounded-lg hover:bg-white/[0.15] transition-all text-center">
+                        <div class="text-lg font-medium">Neptune</div>
+                        <div class="text-sm text-gray-400">Eighth Planet</div>
+                    </a>
+                </div>
             </div>
 
-            <!-- Earth Temperature -->
-            <div class="glass rounded-xl p-6">
-                <h3
-                    class="text-xl font-bold text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                    Earth Temperature</h3>
-                <div id="earth-temperature-info"></div>
-            </div>
-        </div>
-
-        <div class="glass rounded-xl p-6">
-            <h2 class="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                Comparison Information</h2>
-            <div class="overflow-x-auto">
-                <table class="min-w-full table-auto">
-                    <thead>
-                        <tr class="bg-white/5">
-                            <th class="px-4 py-2 text-left text-gray-300">Property</th>
-                            <th class="px-4 py-2 text-left text-gray-300" id="planet-table-header"></th>
-                            <th class="px-4 py-2 text-left text-gray-300">Earth</th>
-                        </tr>
-                    </thead>
-                    <tbody id="comparison-table" class="text-gray-300"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Radius Information Section -->
-        <div class="glass rounded-xl p-6 mt-6">
-            <h2 class="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                Radius Information
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
-                <div id="planet-radius-info">
-                    <div class="glass rounded-xl p-4">
-                        <div class="radius-content">
-                            <p class="text-gray-500 italic">Loading radius data...</p>
-                        </div>
+            <div class="glass rounded-2xl p-6 mb-8">
+                <div class="flex flex-col gap-4">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <input type="text" id="searchInput" placeholder="Search for a planet..."
+                            class="flex-1 bg-black/30 border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 transition-colors text-white placeholder-gray-400">
+                        <button onclick="search()"
+                            class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-3 rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105">
+                            Search
+                        </button>
                     </div>
                 </div>
-                <!-- <div id="earth-radius-info">
-                    <div class="glass rounded-xl p-4">
-                        <h3
-                            class="font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                            Earth
-                        </h3>
-                        <div class="radius-content">
-                            <p class="text-gray-500 italic">Loading radius data...</p>
-                        </div>
-                    </div>
-                </div> -->
             </div>
-            <!-- Visual size comparison -->
-            <div id="radius-comparison" class="mt-6">
-                <!-- <p class="text-gray-500 italic text-center">Loading size comparison...</p> -->
+
+            <div id="results" class="space-y-6">
+                <!-- Results will be displayed here -->
             </div>
         </div>
     </div>
 
-    <script src="planetData.js"></script>
     <script>
-        async function loadPlanetData(planetName, targetPrefix) {
+        const DBPEDIA_ENDPOINT = 'https://dbpedia.org/sparql';
+
+        async function search() {
+            const searchInput = document.getElementById('searchInput');
+            const resultsDiv = document.getElementById('results');
+            const term = searchInput.value.trim();
+
+            if (!term) {
+                resultsDiv.innerHTML = '<p class="text-gray-400 text-center">Please enter a search term</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<p class="text-gray-400 text-center">Searching...</p>';
+
+            const query = `
+                PREFIX dbo: <http://dbpedia.org/ontology/>
+                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                
+                SELECT DISTINCT ?planet ?label ?abstract ?thumbnail WHERE {
+                    ?planet a dbo:Planet ;
+                           rdfs:label ?label ;
+                           dbo:abstract ?abstract .
+                    OPTIONAL { ?planet dbo:thumbnail ?thumbnail }
+                    FILTER(LANG(?label) = 'en')
+                    FILTER(LANG(?abstract) = 'en')
+                    FILTER(CONTAINS(LCASE(?label), LCASE("${term}")))
+                }
+                LIMIT 20
+            `;
+
             try {
-                const data = await window.PlanetData.fetchPlanetData(planetName, targetPrefix);
-                updateDisplay(data, planetName, targetPrefix);
-            } catch (error) {
-                console.error("Error loading planet data:", error);
-                if (targetPrefix === 'planet') {
-                    document.getElementById("planet-abstract-info").innerHTML =
-                        "<p class='text-red-500 text-center'>Failed to fetch data.</p>";
-                }
-            }
-        }
+                const response = await fetch(
+                    `${DBPEDIA_ENDPOINT}?query=${encodeURIComponent(query)}&format=json`,
+                    { headers: { 'Accept': 'application/sparql-results+json' } }
+                );
 
-        function updateDisplay(data, planetName, targetPrefix) {
-            if (targetPrefix === 'planet') {
-                updateMainPlanetDisplay(data, planetName);
-                document.getElementById("planet-name").textContent = planetName;
-                document.getElementById("planet-temp-title").textContent = `${planetName} Temperature`;
-                document.getElementById("planet-table-header").textContent = planetName;
-            }
-            updateTemperatureDisplay(data.temperatures, targetPrefix);
-            window.PlanetData.updateComparisonTable();
-        }
+                if (!response.ok) throw new Error('Connection error');
 
-        function updateMainPlanetDisplay(data, planetName) {
-            const imageContainerId = 'planet-image-container';
-            document.getElementById("planet-abstract-info").innerHTML = `
-                <div class="flex flex-col md:flex-row gap-6 items-start mb-6">
-                    <div id="${imageContainerId}" class="md:w-1/3 flex-shrink-0">
-                        <div class="rounded-lg shadow-lg overflow-hidden bg-black">
-                            <!-- Image will be placed here -->
-                        </div>
-                    </div>
-                    <div class="md:w-2/3">
-                        <p class="text-gray-300">${data.abstract}</p>
-                        <div class="mt-4 flex gap-4">
-                            <a href="${data.externalLinks.dbpedia}" target="_blank" rel="noopener noreferrer" 
-                               class="glass px-4 py-2 rounded-lg text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                </svg>
-                                View on DBpedia
-                            </a>
-                            <a href="${data.externalLinks.wikidata}" target="_blank" rel="noopener noreferrer" 
-                               class="glass px-4 py-2 rounded-lg text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                </svg>
-                                View on Wikidata
-                            </a>
-                            <a href="${data.externalLinks.wikipedia}" target="_blank" rel="noopener noreferrer" 
-                               class="glass px-4 py-2 rounded-lg text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                </svg>
-                                View on Wikipedia
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4 mt-6">
-                    <div class="glass rounded-xl p-4">
-                        <h3 class="font-semibold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Satellites</h3>
-                        ${data.satellites.length > 0 ?
-                    `<ul class="list-disc list-inside">
-                                ${data.satellites.map(sat =>
-                        `<li><a href="?planetName=${sat.replace(/ /g, '_')}" 
-                                                class="text-gray-300 hover:text-white transition-colors">${sat}</a></li>`
-                    ).join('')}
-                            </ul>` :
-                    '<p class="text-gray-500 italic">No satellites found</p>'
-                }
-                    </div>
-                    <div class="glass rounded-xl p-4">
-                        <h3 class="font-semibold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Orbits Around</h3>
-                        ${data.parentBodies.length > 0 ?
-                    `<ul class="list-disc list-inside">
-                                ${data.parentBodies.map(body =>
-                        `<li><a href="?planetName=${body.replace(/ /g, '_')}" 
-                                                class="text-gray-300 hover:text-white transition-colors">${body}</a></li>`
-                    ).join('')}
-                            </ul>` :
-                    '<p class="text-gray-500 italic">No parent bodies found</p>'
-                }
-                    </div>
-                </div>
-            `;
+                const data = await response.json();
+                const results = data.results.bindings;
 
-            // Load the image asynchronously
-            if (window.wikiImagePromise) {
-                window.wikiImagePromise.then(wikiImage => {
-                    if (wikiImage) {
-                        document.getElementById(imageContainerId).querySelector('.rounded-lg').innerHTML = `
-                            <img src="${wikiImage}" alt="${planetName}" class="w-full h-auto">
-                        `;
-                    }
+                // Simple sorting: exact matches first, then starts with
+                const searchTerm = term.toLowerCase();
+                results.sort((a, b) => {
+                    const labelA = a.label.value.toLowerCase();
+                    const labelB = b.label.value.toLowerCase();
+
+                    // Exact matches first
+                    const isExactA = labelA === searchTerm;
+                    const isExactB = labelB === searchTerm;
+                    if (isExactA !== isExactB) return isExactA ? -1 : 1;
+
+                    // Then starts with
+                    const startsWithA = labelA.startsWith(searchTerm);
+                    const startsWithB = labelB.startsWith(searchTerm);
+                    if (startsWithA !== startsWithB) return startsWithA ? -1 : 1;
+
+                    return 0;
                 });
+
+                displayResults(results.slice(0, 10));
+            } catch (error) {
+                console.error('Error:', error);
+                resultsDiv.innerHTML = '<p class="text-red-500 text-center">Search error</p>';
             }
         }
 
-        function updateTemperatureDisplay(temperatures, targetPrefix) {
-            document.getElementById(`${targetPrefix}-temperature-info`).innerHTML = `
-                <div class="glass rounded-xl p-4">
-                    ${(!temperatures.min && !temperatures.mean && !temperatures.max) ?
-                    `<p class="text-center text-gray-400 italic mb-4">No temperature data available</p>` :
-                    `<div class="relative w-full mt-4">
-                        <div class="temperature-bar"></div>
-                        ${temperatures.min !== null ?
-                        `<div class="temp-marker" style="left: ${window.PlanetData.tempToPercent(temperatures.min)}%"></div>` : ''}
-                        ${temperatures.mean !== null ?
-                        `<div class="temp-marker" style="left: ${window.PlanetData.tempToPercent(temperatures.mean)}%"></div>` : ''}
-                        ${temperatures.max !== null ?
-                        `<div class="temp-marker" style="left: ${window.PlanetData.tempToPercent(temperatures.max)}%"></div>` : ''}
-                        
-                        <div class="temp-scale">
-                            ${[0, 100, 200, 300, 400, 500].map(temp => `
-                                <div class="temp-scale-mark" style="left: ${(temp / 500) * 100}%"></div>
-                                <div class="temp-scale-label text-gray-400" style="left: ${(temp / 500) * 100}%">${temp}K</div>
-                            `).join('')}
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+
+            if (!results || results.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="glass rounded-xl p-6 text-center">
+                        <p class="text-gray-400">No planets found</p>
+                        <p class="text-sm text-gray-500 mt-2">Try different search terms</p>
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            results.forEach(result => {
+                const planetUri = result.planet.value;
+                const planetName = planetUri.split('/').pop();
+                const label = result.label.value;
+                const abstract = result.abstract.value;
+                const thumbnail = result.thumbnail?.value;
+
+                html += `
+                    <a href="planet_details.html?planetName=${encodeURIComponent(planetName)}" 
+                       class="block glass rounded-xl p-6 transform transition-all duration-300 hover:scale-[1.02] cursor-pointer">
+                        <div class="flex flex-col md:flex-row gap-6">
+                            ${thumbnail ? `
+                                <div class="md:w-1/4 flex-shrink-0">
+                                    <img src="${thumbnail}" alt="${label}" class="w-full h-32 object-cover rounded-lg">
+                                </div>
+                            ` : ''}
+                            <div class="flex-1">
+                                <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                                    ${label}
+                                </h2>
+                                <p class="text-gray-300 mt-2 line-clamp-3">
+                                    ${abstract}
+                                </p>
+                            </div>
                         </div>
-                    </div>`
-                }
-                    <div class="mt-4 text-gray-300">
-                        <p><strong class="text-white">Min:</strong> ${temperatures.min !== null ?
-                    `${temperatures.min}K (${window.PlanetData.kelvinToCelsius(temperatures.min)}°C)` :
-                    '<span class="text-gray-500 italic">Data missing</span>'}</p>
-                        <p><strong class="text-white">Mean:</strong> ${temperatures.mean !== null ?
-                    `${temperatures.mean}K (${window.PlanetData.kelvinToCelsius(temperatures.mean)}°C)` :
-                    '<span class="text-gray-500 italic">Data missing</span>'}</p>
-                        <p><strong class="text-white">Max:</strong> ${temperatures.max !== null ?
-                    `${temperatures.max}K (${window.PlanetData.kelvinToCelsius(temperatures.max)}°C)` :
-                    '<span class="text-gray-500 italic">Data missing</span>'}</p>
-                    </div>
-                </div>
-            `;
+                    </a>`;
+            });
+
+            resultsDiv.innerHTML = html;
         }
 
-        // Load data when the page loads
-        window.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const planetName = urlParams.get('planetName');
-            // If planetName is not provided, redirect to Mars
-            if (!planetName) {
-                window.location.href = '?planetName=Mars';
+        // Handle Enter key in search input
+        document.getElementById('searchInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                search();
             }
-
-            // Load data for both the selected planet and Earth (for comparison)
-            loadPlanetData(planetName, 'planet');
-            loadPlanetData('Earth', 'earth');
         });
     </script>
 </body>

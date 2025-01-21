@@ -253,29 +253,16 @@ function formatConstellationDetails(constellation) {
 
     // Stars in the Constellation
     if (constellation.stars) {
-        const starCards = constellation.stars.split(', ')
-            .map(star => `
-                <div class="bg-gradient-to-br from-blue-900/70 via-cyan-900/70 to-indigo-900/70 
-                    rounded-xl p-4 backdrop-blur-sm shadow-lg shadow-blue-900/20
-                    hover:shadow-blue-700/30 transition-all duration-300 transform hover:scale-[1.02]
-                    border border-blue-500/20">
-                    <div class="flex items-center space-x-3 mb-2">
-                        <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
-                        </svg>
-                        <h3 class="text-lg font-medium bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">${star}</h3>
-                    </div>
-                </div>
-            `).join('');
+        const starsSection = document.createElement('div');
+        starsSection.setAttribute('data-section', 'stars');
         
         sections.push({
             title: "Notable Stars",
-            content: `
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    ${starCards}
-                </div>
-            `
+            content: starsSection.outerHTML
         });
+
+        // Initialize stars section after the sections are added to the DOM
+        setTimeout(() => updateStarsSection(constellation), 0);
     }
 
     // Galaxies in the Constellation
@@ -286,12 +273,15 @@ function formatConstellationDetails(constellation) {
                     rounded-xl p-4 backdrop-blur-sm shadow-lg shadow-blue-900/20
                     hover:shadow-blue-700/30 transition-all duration-300 transform hover:scale-[1.02]
                     border border-blue-500/20">
-                    <div class="flex items-center space-x-3 mb-2">
-                        <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                        </svg>
-                        <h3 class="text-lg font-medium bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">${galaxy}</h3>
-                    </div>
+                    <a href="galaxy-details.html?galaxyName=${encodeURIComponent(galaxy)}" 
+                        class="block">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            </svg>
+                            <h3 class="text-lg font-medium bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent hover:from-blue-200 hover:to-cyan-200 transition-colors duration-200">${galaxy}</h3>
+                        </div>
+                    </a>
                 </div>
             `).join('');
         
@@ -329,6 +319,209 @@ function formatConstellationBadges(constellation) {
     }
     
     return badges;
+}
+
+// Add pagination state for stars
+let currentStarsPage = 1;
+const starsPerPage = 12;
+
+// Function to fetch stars for a constellation with pagination
+async function fetchStarsForConstellation(constellationName, page) {
+    const offset = (page - 1) * starsPerPage;
+    
+    // First, get total count
+    const countQuery = `
+        PREFIX dbo: <http://dbpedia.org/ontology/>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX dbp: <http://dbpedia.org/property/>
+        
+        SELECT (COUNT(DISTINCT ?star) as ?count)
+        WHERE {
+            ?constellation a dbo:Constellation ;
+                rdfs:label ?name .
+            ?star a dbo:Star ;
+                rdfs:label ?starName ;
+                dbp:constell ?constellation .
+            FILTER(LANG(?name) = 'en')
+            FILTER(LANG(?starName) = 'en')
+            FILTER(CONTAINS(LCASE(?name), LCASE("${constellationName}")))
+        }
+    `;
+
+    // Then, get paginated stars
+    const starsQuery = `
+        PREFIX dbo: <http://dbpedia.org/ontology/>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX dbp: <http://dbpedia.org/property/>
+        
+        SELECT DISTINCT ?starName
+        WHERE {
+            ?constellation a dbo:Constellation ;
+                rdfs:label ?name .
+            ?star a dbo:Star ;
+                rdfs:label ?starName ;
+                dbp:constell ?constellation .
+            FILTER(LANG(?name) = 'en')
+            FILTER(LANG(?starName) = 'en')
+            FILTER(CONTAINS(LCASE(?name), LCASE("${constellationName}")))
+        }
+        ORDER BY ?starName
+        LIMIT ${starsPerPage}
+        OFFSET ${offset}
+    `;
+
+    try {
+        // Get total count
+        const countUrl = `https://dbpedia.org/sparql?query=${encodeURIComponent(countQuery)}&format=json`;
+        const countResponse = await fetch(countUrl, {
+            headers: { 'Accept': 'application/sparql-results+json' }
+        });
+        const countData = await countResponse.json();
+        const totalCount = parseInt(countData.results.bindings[0].count.value);
+
+        // Get stars for current page
+        const starsUrl = `https://dbpedia.org/sparql?query=${encodeURIComponent(starsQuery)}&format=json`;
+        const starsResponse = await fetch(starsUrl, {
+            headers: { 'Accept': 'application/sparql-results+json' }
+        });
+        const starsData = await starsResponse.json();
+
+        return {
+            stars: starsData.results.bindings,
+            totalCount: totalCount
+        };
+    } catch (error) {
+        console.error('Error fetching stars:', error);
+        throw error;
+    }
+}
+
+// Function to create stars pagination controls
+function createStarsPaginationControls(totalStars, constellationName) {
+    const totalPages = Math.ceil(totalStars / starsPerPage);
+    const paginationContainer = document.createElement('div');
+    paginationContainer.className = 'flex justify-center items-center space-x-2 mt-4';
+
+    // Previous button
+    const prevButton = document.createElement('button');
+    prevButton.className = `px-3 py-1 rounded-lg ${currentStarsPage === 1 ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-cyan-500 text-white hover:bg-cyan-600'} transition-colors duration-200`;
+    prevButton.textContent = 'Previous';
+    prevButton.disabled = currentStarsPage === 1;
+    prevButton.onclick = async () => {
+        if (currentStarsPage > 1) {
+            currentStarsPage--;
+            console.log('Fetching previous page:', currentStarsPage);
+            await updateStarsSection({ name: constellationName });
+        }
+    };
+
+    // Next button
+    const nextButton = document.createElement('button');
+    nextButton.className = `px-3 py-1 rounded-lg ${currentStarsPage >= totalPages ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-cyan-500 text-white hover:bg-cyan-600'} transition-colors duration-200`;
+    nextButton.textContent = 'Next';
+    nextButton.disabled = currentStarsPage >= totalPages;
+    nextButton.onclick = async () => {
+        if (currentStarsPage < totalPages) {
+            currentStarsPage++;
+            console.log('Fetching next page:', currentStarsPage);
+            await updateStarsSection({ name: constellationName });
+        }
+    };
+
+    // Page info with total stars count
+    const pageInfo = document.createElement('span');
+    pageInfo.className = 'text-gray-300 text-sm';
+    pageInfo.textContent = `Page ${currentStarsPage} of ${totalPages} (${totalStars} stars)`;
+
+    paginationContainer.appendChild(prevButton);
+    paginationContainer.appendChild(pageInfo);
+    paginationContainer.appendChild(nextButton);
+
+    return paginationContainer;
+}
+
+// Function to update stars section
+async function updateStarsSection(constellation) {
+    console.log('Updating stars section');
+    const starsSection = document.querySelector('[data-section="stars"]');
+    if (!starsSection) return;
+
+    try {
+        // Add loading state
+        starsSection.innerHTML = '<p class="text-gray-400 text-center">Loading stars...</p>';
+        
+        // Get the constellation name from the URL if not provided
+        let constellationName = constellation.name;
+        if (!constellationName) {
+            const urlParams = new URLSearchParams(window.location.search);
+            constellationName = urlParams.get('name');
+        }
+        
+        const { stars, totalCount } = await fetchStarsForConstellation(constellationName, currentStarsPage);
+        if (stars.length === 0) {
+            starsSection.innerHTML = '<p class="text-gray-400 text-center">No stars found</p>';
+            return;
+        }
+
+        const starCards = stars.map(result => `
+            <div class="bg-gradient-to-br from-blue-900/70 via-cyan-900/70 to-indigo-900/70 
+                rounded-xl p-4 backdrop-blur-sm shadow-lg shadow-blue-900/20
+                hover:shadow-blue-700/30 transition-all duration-300 transform hover:scale-[1.02]
+                border border-blue-500/20">
+                <div class="flex items-center space-x-3 mb-2">
+                    <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                    </svg>
+                    <h3 class="text-lg font-medium bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">${result.starName.value}</h3>
+                </div>
+            </div>
+        `).join('');
+
+        // Create the content container
+        const contentContainer = document.createElement('div');
+        contentContainer.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                ${starCards}
+            </div>
+        `;
+
+        // Clear the section and add the star cards
+        starsSection.innerHTML = '';
+        starsSection.appendChild(contentContainer);
+
+        // Add pagination if needed
+        if (totalCount > starsPerPage) {
+            const paginationContainer = createStarsPaginationControls(totalCount, constellationName);
+            starsSection.appendChild(paginationContainer);
+
+            // Add event listeners after the pagination controls are added to the DOM
+            const nextButton = paginationContainer.querySelector('button:nth-child(3)');
+            const prevButton = paginationContainer.querySelector('button:nth-child(1)');
+
+            if (nextButton) {
+                nextButton.onclick = async () => {
+                    console.log("Next button clicked");
+                    if (currentStarsPage < Math.ceil(totalCount / starsPerPage)) {
+                        currentStarsPage++;
+                        await updateStarsSection({ name: constellationName });
+                    }
+                };
+            }
+
+            if (prevButton) {
+                prevButton.onclick = async () => {
+                    console.log("Previous button clicked");
+                    if (currentStarsPage > 1) {
+                        currentStarsPage--;
+                        await updateStarsSection({ name: constellationName });
+                    }
+                };
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching stars:', error);
+        starsSection.innerHTML = '<p class="text-red-400 text-center">Error loading stars</p>';
+    }
 }
 
 // Initialize page

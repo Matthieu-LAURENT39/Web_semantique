@@ -420,7 +420,11 @@
         // Load data when the page loads
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const planetName = urlParams.get('planetName') || 'Earth';
+            const planetName = urlParams.get('planetName');
+            // If planetName is not provided, redirect to Mars
+            if (!planetName) {
+                window.location.href = '?planetName=Mars';
+            }
 
             // Load data for both the selected planet and Earth (for comparison)
             loadPlanetData(planetName, 'planet');
